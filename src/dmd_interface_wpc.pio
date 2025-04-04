@@ -45,8 +45,8 @@ dotloop:
     set x, 31
 
 lineloop:
-    wait 0 gpio collat
     wait 1 gpio collat
+    wait 0 gpio collat
     jmp x-- lineloop
 
     irq 4
