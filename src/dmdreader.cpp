@@ -920,7 +920,7 @@ void dmdreader_programs_init(const pio_program_t *dmd_reader_program,
 }
 
 bool dmdreader_init(bool return_on_no_detection) {
-  dmd_type = DMD_UNKNOWN;
+  dmd_type = DMD_DOTMATION;
   // Loop until the DMD is detected as it might need some time to be available
   // on power-on
   do {

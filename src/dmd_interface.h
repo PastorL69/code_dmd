@@ -25,6 +25,7 @@ void dmd_reader_program_init(float dmd_clkdiv, PIO pio, uint sm, uint offset, pi
     sm_config_set_jmp_pin(&c, DOTCLK);
     // Make sure we run the sm with a 125MHz clk
     sm_config_set_clkdiv(&c, dmd_clkdiv);
+    digitalWrite(LED_BUILTIN, HIGH); // debug
   }
 
   if (in_base_pin == SDATA_X16) {
