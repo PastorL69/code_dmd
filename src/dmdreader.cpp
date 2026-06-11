@@ -923,16 +923,16 @@ bool dmdreader_init(bool return_on_no_detection) {
   dmd_type = DMD_DOTMATION;
   // Loop until the DMD is detected as it might need some time to be available
   // on power-on
-  do {
-    dmd_type = detect_dmd();
-    if (dmd_type == DMD_UNKNOWN && return_on_no_detection) {
-      return false;
-    }
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(300);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(200);
-  } while (dmd_type == DMD_UNKNOWN);
+  //do {
+  //  dmd_type = detect_dmd();
+  // if (dmd_type == DMD_UNKNOWN && return_on_no_detection) {
+  //    return false;
+  //  }
+  //  digitalWrite(LED_BUILTIN, HIGH);
+  //  delay(300);
+  //  digitalWrite(LED_BUILTIN, LOW);
+  //  delay(200);
+  //} while (dmd_type == DMD_UNKNOWN);
 
   // Delay is still needed when blink gets removed above.
   // delay(1000);
