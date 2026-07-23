@@ -892,17 +892,27 @@ void dmd_dma_handler() {
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
+  uint32_t normal_crc1 = micros();
+
   frame_crc =
       crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
 
+  uint32_t normal_crc2 = micros();
+
+  uint32_t dma_sniff1 = micros();
+
   uint32_t dma_crc2 = dma_hw->sniff_data;
+
+  uint32_t dma_sniff2 = micros();
 
   switch_buffers();
 
   if (frame_crc != crc_previous_frame) {
     Serial.printf("crc 32 calculated orig: 0x%08X\n", frame_crc);
+    Serial.printf("normal crc time diff:%d", normal_crc2 - normal_crc1);
     Serial.printf("crc 32 dma sniffer: 0x%08X\n", dma_crc);
     Serial.printf("crc 32 dma sniffer2: 0x%08X\n", dma_crc2);
+    Serial.printf("dma crc time diff:%d", dma_sniff2 - dma_sniff1);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
