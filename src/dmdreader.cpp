@@ -140,10 +140,14 @@ PIO frame_pio;
 uint frame_sm;
 uint frame_offset;
 
+static uint8_t tx_destination[1];
+
 // DMA
+uint dmd_crc_channel;
 uint dmd_dma_channel;
 uint spi_dma_channel;
 
+dma_channel_config dmd_crc_channel_cfg;
 dma_channel_config dmd_dma_channel_cfg;
 dma_channel_config spi_dma_channel_cfg;
 
@@ -630,8 +634,8 @@ void dmd_dma_reset() {
  */
 void dmd_dma_handler() {
   // get the frame crc by sniffing the DMA transfer at no cpu cost
-  frame_crc = dma_hw->sniff_data;
-  dma_hw->sniff_data = 0; // always clean after sniffing.
+  //frame_crc = dma_hw->sniff_data;
+  //dma_hw->sniff_data = 0; // always clean after sniffing.
 
   dmd_set_and_enable_new_dma_target();
 
@@ -1432,8 +1436,8 @@ bool dmdreader_init(bool return_on_no_detection) {
     source_dwordsperplane *= 4;
   }
   source_bytesperplane = source_bytes;
-  source_dwordsperframe = (source_dwordsperplane *
-                          (source_planesperframe - source_planehistoryperframe)) + 1;
+  source_dwordsperframe = source_dwordsperplane *
+                          (source_planesperframe - source_planehistoryperframe);
   source_bytesperframe = source_bytesperplane * source_planesperframe;
   source_dwordsperline = source_width * source_bitsperpixel / 32;
 
@@ -1487,6 +1491,30 @@ bool dmdreader_init(bool return_on_no_detection) {
       source_dwordsperplane /= 2;
   }
 
+// --- Channel 2: CRC Transmitter ---
+  dmd_crc_channel = dma_claim_unused_channel(true);
+  dma_channel_config dmd_crc_channel_cfg = dma_channel_get_default_config(dmd_crc_channel);
+  channel_config_set_transfer_data_size(&dmd_crc_channel_cfg, DMA_SIZE_8);
+  channel_config_set_read_increment(&dmd_crc_channel_cfg, true);
+  channel_config_set_write_increment(&dmd_crc_channel_cfg, false);
+
+  // Configure hardware Sniffer engine on Data Channel
+  dma_sniffer_set_data_accumulator(0xFFFFFFFF);
+  channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
+  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
+
+  // Chain to CRC channel automatically when Channel 1 finishes
+  channel_config_set_chain_to(&dmd_dma_channel_cfg, dmd_crc_channel);
+
+  dma_channel_configure(
+      dmd_crc_channel, 
+      &dmd_crc_channel_cfg,
+      tx_destination,                   // TX destination
+      &frame_crc,            // Reads from calculated CRC variable
+      4,                     // 4-byte CRC output
+      false                  // Do NOT start yet
+  );
+
   // DMA for DMD reader
   dmd_dma_channel = dma_claim_unused_channel(true);
   dmd_dma_channel_cfg = dma_channel_get_default_config(dmd_dma_channel);
@@ -1494,11 +1522,6 @@ bool dmdreader_init(bool return_on_no_detection) {
   channel_config_set_write_increment(&dmd_dma_channel_cfg, true);
   channel_config_set_dreq(&dmd_dma_channel_cfg,
                           pio_get_dreq(dmd_pio, dmd_sm, false));
-
-  // Make use of the built-in CRC32 sniffer for duplicate frames.
-  channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
-  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
-  dma_hw->sniff_data = 0;
 
   // Configure the DMA channel. As soon as the PIO pushed a specified number
   // of words to its RX FIFO, the DMA transfer will be triggered. The amount
