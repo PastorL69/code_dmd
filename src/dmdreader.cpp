@@ -632,7 +632,7 @@ void dmd_dma_handler() {
   // get the frame crc by sniffing the DMA transfer at no cpu cost
   //delay(1);
   frame_crc = dma_hw->sniff_data;
-  dma_hw->sniff_data = 0; // always clean after sniffing.
+  dma_hw->sniff_data = 0xFFFFFFFF; // always clean after sniffing.
 
   dmd_set_and_enable_new_dma_target();
 
@@ -902,8 +902,6 @@ void dmd_dma_handler() {
 
   // frame_crc =
   //   crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
-
-  //Serial.printf("crc 32 with dma: 0x%08X\n", frame_crc);
 
   if (frame_crc != crc_previous_frame) {
     Serial.printf("crc 32 with dma: 0x%08X\n", frame_crc);
@@ -1488,11 +1486,6 @@ bool dmdreader_init(bool return_on_no_detection) {
       source_dwordsperplane /= 2;
   }
 
-  // Configure hardware Sniffer engine on Data Channel
-  dma_sniffer_set_data_accumulator(0xFFFFFFFF);
-  channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
-  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
-
   // DMA for DMD reader
   dmd_dma_channel = dma_claim_unused_channel(true);
   dmd_dma_channel_cfg = dma_channel_get_default_config(dmd_dma_channel);
@@ -1500,6 +1493,11 @@ bool dmdreader_init(bool return_on_no_detection) {
   channel_config_set_write_increment(&dmd_dma_channel_cfg, true);
   channel_config_set_dreq(&dmd_dma_channel_cfg,
                           pio_get_dreq(dmd_pio, dmd_sm, false));
+
+  // Configure hardware Sniffer engine on Data Channel
+  channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
+  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
+  dma_sniffer_set_data_accumulator(0xFFFFFFFF);
 
   // Configure the DMA channel. As soon as the PIO pushed a specified number
   // of words to its RX FIFO, the DMA transfer will be triggered. The amount
