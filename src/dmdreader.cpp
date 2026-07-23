@@ -898,8 +898,8 @@ void dmd_dma_handler() {
   switch_buffers();
 
   if (frame_crc != crc_previous_frame) {
-    Serial.printf("crc 32 calculated orig: %d\n", frame_crc);
-    Serial.printf("crc 32 dma sniffer: %d\n", dma_crc);
+    Serial.printf("crc 32 calculated orig: 0x%08X\n", frame_crc);
+    Serial.printf("crc 32 dma sniffer: 0x%08X\n", dma_crc);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
@@ -1490,8 +1490,9 @@ bool dmdreader_init(bool return_on_no_detection) {
                           pio_get_dreq(dmd_pio, dmd_sm, false));
 
   // Make use of the built-in CRC32 calculator for duplicate frames.
-  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32, true);
+  channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
   dma_hw->sniff_data = 0xFFFFFFFF;
+  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32, true);
 
   // Configure the DMA channel. As soon as the PIO pushed a specified number
   // of words to its RX FIFO, the DMA transfer will be triggered. The amount
