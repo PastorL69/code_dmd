@@ -909,10 +909,10 @@ void dmd_dma_handler() {
 
   if (frame_crc != crc_previous_frame) {
     Serial.printf("crc 32 calculated orig: 0x%08X\n", frame_crc);
-    Serial.printf("normal crc time diff:%d", normal_crc2 - normal_crc1);
+    Serial.printf("normal crc time diff:%d\n", normal_crc2 - normal_crc1);
     Serial.printf("crc 32 dma sniffer: 0x%08X\n", dma_crc);
     Serial.printf("crc 32 dma sniffer2: 0x%08X\n", dma_crc2);
-    Serial.printf("dma crc time diff:%d", dma_sniff2 - dma_sniff1);
+    Serial.printf("dma crc time diff:%d\n", dma_sniff2 - dma_sniff1);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
