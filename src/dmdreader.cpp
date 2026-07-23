@@ -1529,7 +1529,7 @@ bool dmdreader_init(bool return_on_no_detection) {
   dma_channel_configure(dmd_dma_channel, &dmd_dma_channel_cfg,
                         NULL,  // Destination pointer, needs to be set later
                         &dmd_pio->rxf[dmd_sm],  // Source pointer
-                        source_dwordsperframe + 1,  // Number of transfers + crc32
+                        source_dwordsperframe,  // Number of transfers + crc32
                         false                   // Do not yet start
   );
 
