@@ -1497,7 +1497,7 @@ bool dmdreader_init(bool return_on_no_detection) {
 
   // Make use of the built-in CRC32 sniffer for duplicate frames.
   //channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
-  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, false);
+  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
   dma_hw->sniff_data = 0;
 
   // Configure the DMA channel. As soon as the PIO pushed a specified number
@@ -1506,7 +1506,7 @@ bool dmdreader_init(bool return_on_no_detection) {
   dma_channel_configure(dmd_dma_channel, &dmd_dma_channel_cfg,
                         NULL,  // Destination pointer, needs to be set later
                         &dmd_pio->rxf[dmd_sm],  // Source pointer
-                        source_dwordsperframe,  // Number of transfers
+                        source_dwordsperframe + 1,  // Number of transfers + crc32
                         false                   // Do not yet start
   );
 
