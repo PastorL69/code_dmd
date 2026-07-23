@@ -1438,8 +1438,8 @@ bool dmdreader_init(bool return_on_no_detection) {
   source_dwordsperline = source_width * source_bitsperpixel / 32;
 
   if (!planebuf1) {
-    size_t plane_bytes = (source_bytesperplane * source_planesperframe) + 4;
-    size_t dma_bytes = (source_dwordsperframe * sizeof(uint32_t)) + 4;
+    size_t plane_bytes = source_bytesperplane * source_planesperframe;
+    size_t dma_bytes = source_dwordsperframe * sizeof(uint32_t);
     if (dma_bytes > plane_bytes) {
       plane_bytes = dma_bytes;
     }
