@@ -635,8 +635,8 @@ void dmd_dma_handler() {
 
   dmd_set_and_enable_new_dma_target();
 
-  frame_crc =
-    crc32(0, currentPlaneBuffer, loopback ? source_bytes : target_bytes);
+  // frame_crc =
+  //   crc32(0, currentPlaneBuffer, loopback ? source_bytes : target_bytes);
 
   if (dmd_type == DMD_DE_X16_V2) {
     // Due to the complexity of x16 v2, we use this way to re-sync
@@ -1497,7 +1497,7 @@ bool dmdreader_init(bool return_on_no_detection) {
 
   // Make use of the built-in CRC32 sniffer for duplicate frames.
   //channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
-  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
+  dma_sniffer_enable(dmd_dma_channel, 0xf, true);
   dma_hw->sniff_data = 0;
 
   // Configure the DMA channel. As soon as the PIO pushed a specified number
