@@ -895,11 +895,14 @@ void dmd_dma_handler() {
   frame_crc =
       crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
 
+  uint32_t dma_crc2 = dma_hw->sniff_data;
+
   switch_buffers();
 
   if (frame_crc != crc_previous_frame) {
     Serial.printf("crc 32 calculated orig: 0x%08X\n", frame_crc);
     Serial.printf("crc 32 dma sniffer: 0x%08X\n", dma_crc);
+    Serial.printf("crc 32 dma sniffer2: 0x%08X\n", dma_crc2);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
