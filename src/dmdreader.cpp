@@ -84,6 +84,7 @@ uint16_t source_lineoversampling;
 uint16_t source_dwordsperline;
 uint16_t source_mergeplanes;
 uint16_t offset[MAX_PLANESPERFRAME];
+uint32_t crc_history[MAX_PLANESPERFRAME];
 
 static uint8_t *alloc_aligned_buffer(size_t size, size_t alignment,
                                      void **base_out) {
@@ -561,6 +562,15 @@ upscale_4bit_0_4_to_0_15(uint32_t input) {
 // upscale_4bit_0_4_to_0_15() END
 // -------------------------------
 
+// Keep track of the CRCs for planehistory systems
+void update_crc_history() {
+  crc_previous_frame = crc_history[0];
+  for (int i = 0; i < source_planehistoryperframe; i++) {
+    crc_history[i] = crc_history[i + 1];
+  }
+  crc_history[source_planehistoryperframe] = frame_crc;
+}
+
 void switch_buffers() {
   uint8_t *previousPlaneBuffer = currentPlaneBuffer;
   // Switch to next plane and frame buffers
@@ -579,6 +589,7 @@ void switch_buffers() {
                                 source_planehistoryperframe)],
            previousPlaneBuffer,
            source_bytesperplane * source_planehistoryperframe);
+    update_crc_history();
   }
 }
 
@@ -1468,6 +1479,7 @@ bool dmdreader_init(bool return_on_no_detection) {
   // Calculate offsets for the first pixel of each plane and cache these.
   for (int i = 0; i < MAX_PLANESPERFRAME; i++) {
     offset[i] = i * source_dwordsperplane;
+    crc_history[i] = 0; // initialize to 0
   }
 
   // Read a 128x16 frame but process as 128x32, so, change the number of
