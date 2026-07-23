@@ -119,6 +119,7 @@ uint8_t *framebuf3;
 uint8_t *current_framebuf;
 uint8_t *framebuf_to_send;
 
+uint32_t dma_crc = 0;
 uint32_t frame_crc = 0;
 uint32_t crc_previous_frame = 0;
 bool detected_0_1_0_1 = false;
@@ -629,6 +630,7 @@ void dmd_dma_reset() {
  *
  */
 void dmd_dma_handler() {
+  dma_crc = dma_hw->sniff_data;
   dmd_set_and_enable_new_dma_target();
 
   if (dmd_type == DMD_DE_X16_V2) {
@@ -889,8 +891,6 @@ void dmd_dma_handler() {
 
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
-
-  uint32_t dma_crc = dma_hw->sniff_data;
 
   frame_crc =
       crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
