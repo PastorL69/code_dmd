@@ -1511,9 +1511,8 @@ bool dmdreader_init(bool return_on_no_detection) {
   // CRC-32 standard configurations:
   // Bit-reverse and invert output to match standard bit-reflected CRC32
   channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
-  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32, true);
+  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
   dma_hw->sniff_ctrl |= DMA_SNIFF_CTRL_OUT_INV_BITS; // Invert output bits
-  dma_hw->sniff_ctrl |= DMA_SNIFF_CTRL_OUT_REV_BITS; // Reverse output bit order
   dma_hw->sniff_data = 0xFFFFFFFF;
 
   // Configure the DMA channel. As soon as the PIO pushed a specified number
