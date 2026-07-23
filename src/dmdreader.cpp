@@ -1438,8 +1438,8 @@ bool dmdreader_init(bool return_on_no_detection) {
   source_dwordsperline = source_width * source_bitsperpixel / 32;
 
   if (!planebuf1) {
-    size_t plane_bytes = source_bytesperplane * source_planesperframe;
-    size_t dma_bytes = source_dwordsperframe * sizeof(uint32_t);
+    size_t plane_bytes = (source_bytesperplane * source_planesperframe) + 4;
+    size_t dma_bytes = (source_dwordsperframe * sizeof(uint32_t)) + 4;
     if (dma_bytes > plane_bytes) {
       plane_bytes = dma_bytes;
     }
@@ -1496,7 +1496,7 @@ bool dmdreader_init(bool return_on_no_detection) {
                           pio_get_dreq(dmd_pio, dmd_sm, false));
 
   // Make use of the built-in CRC32 sniffer for duplicate frames.
-  //channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
+  channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
   dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
   dma_hw->sniff_data = 0;
 
