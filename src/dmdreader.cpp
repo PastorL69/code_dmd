@@ -1432,8 +1432,8 @@ bool dmdreader_init(bool return_on_no_detection) {
     source_dwordsperplane *= 4;
   }
   source_bytesperplane = source_bytes;
-  source_dwordsperframe = source_dwordsperplane *
-                          (source_planesperframe - source_planehistoryperframe);
+  source_dwordsperframe = (source_dwordsperplane *
+                          (source_planesperframe - source_planehistoryperframe)) + 1;
   source_bytesperframe = source_bytesperplane * source_planesperframe;
   source_dwordsperline = source_width * source_bitsperpixel / 32;
 
