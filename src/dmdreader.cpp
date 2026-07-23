@@ -905,6 +905,8 @@ void dmd_dma_handler() {
 
   uint32_t dma_sniff2 = micros();
 
+  dma_hw->sniff_data = 0xFFFFFFFF;
+
   switch_buffers();
 
   if (frame_crc != crc_previous_frame) {
