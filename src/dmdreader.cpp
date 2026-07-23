@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "crc32.h"
 #include "dmd_counter.h"
 #include "dmd_interface.h"
 #include "dmdreader_pins.h"
@@ -630,14 +629,10 @@ void dmd_dma_reset() {
  */
 void dmd_dma_handler() {
   // get the frame crc by sniffing the DMA transfer at no cpu cost
-  //delay(1);
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF; // always clean after sniffing.
 
   dmd_set_and_enable_new_dma_target();
-
-  // frame_crc =
-  //   crc32(0, currentPlaneBuffer, loopback ? source_bytes : target_bytes);
 
   if (dmd_type == DMD_DE_X16_V2) {
     // Due to the complexity of x16 v2, we use this way to re-sync
@@ -900,11 +895,7 @@ void dmd_dma_handler() {
 
   switch_buffers();
 
-  // frame_crc =
-  //   crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
-
   if (frame_crc != crc_previous_frame) {
-    Serial.printf("crc 32 with dma: 0x%08X\n", frame_crc);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
@@ -1494,9 +1485,9 @@ bool dmdreader_init(bool return_on_no_detection) {
   channel_config_set_dreq(&dmd_dma_channel_cfg,
                           pio_get_dreq(dmd_pio, dmd_sm, false));
 
-  // Configure hardware Sniffer engine on Data Channel
+  // Configure CRC32 DMA sniffer to detect duplicate frames
   channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
-  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
+  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32, true);
   dma_sniffer_set_data_accumulator(0xFFFFFFFF);
 
   // Configure the DMA channel. As soon as the PIO pushed a specified number
@@ -1505,7 +1496,7 @@ bool dmdreader_init(bool return_on_no_detection) {
   dma_channel_configure(dmd_dma_channel, &dmd_dma_channel_cfg,
                         NULL,  // Destination pointer, needs to be set later
                         &dmd_pio->rxf[dmd_sm],  // Source pointer
-                        source_dwordsperframe,  // Number of transfers + crc32
+                        source_dwordsperframe,  // Number of transfers
                         false                   // Do not yet start
   );
 
