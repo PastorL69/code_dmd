@@ -630,11 +630,11 @@ void dmd_dma_reset() {
  */
 void dmd_dma_handler() {
   // get the frame crc by sniffing the DMA transfer at no cpu cost
+  delay(1);
   frame_crc = dma_hw->sniff_data;
+  dma_hw->sniff_data = 0; // always clean after sniffing.
 
   dmd_set_and_enable_new_dma_target();
-
-  dma_hw->sniff_data = 0; // always clean after sniffing.
 
   // frame_crc =
   //   crc32(0, currentPlaneBuffer, loopback ? source_bytes : target_bytes);
