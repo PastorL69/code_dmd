@@ -903,7 +903,7 @@ void dmd_dma_handler() {
   // frame_crc =
   //   crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
 
-  Serial.printf("crc 32 with dma: 0x%08X\n", frame_crc);
+  //Serial.printf("crc 32 with dma: 0x%08X\n", frame_crc);
 
   if (frame_crc != crc_previous_frame) {
     Serial.printf("crc 32 with dma: 0x%08X\n", frame_crc);
