@@ -907,6 +907,7 @@ void dmd_dma_handler() {
   switch_buffers();
 
   if (frame_crc != crc_previous_frame) {
+    Serial.printf("got frame: %d\n", frame_crc);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
