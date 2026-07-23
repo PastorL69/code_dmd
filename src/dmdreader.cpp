@@ -119,7 +119,6 @@ uint8_t *framebuf3;
 uint8_t *current_framebuf;
 uint8_t *framebuf_to_send;
 
-uint32_t dma_crc = 0;
 uint32_t frame_crc = 0;
 uint32_t crc_previous_frame = 0;
 bool detected_0_1_0_1 = false;
@@ -630,7 +629,10 @@ void dmd_dma_reset() {
  *
  */
 void dmd_dma_handler() {
-  dma_crc = dma_hw->sniff_data;
+  // get the frame crc by sniffing the DMA transfer at no cpu cost
+  frame_crc = dma_hw->sniff_data;
+  dma_hw->sniff_data = 0xFFFFFFFF; // always clean after sniffing.
+
   dmd_set_and_enable_new_dma_target();
 
   frame_crc =
@@ -895,29 +897,10 @@ void dmd_dma_handler() {
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
-  uint32_t normal_crc1 = micros();
-
-  // frame_crc =
-  //     crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
-
-  uint32_t normal_crc2 = micros();
-
-  uint32_t dma_sniff1 = micros();
-
-  uint32_t dma_crc2 = dma_hw->sniff_data;
-
-  uint32_t dma_sniff2 = micros();
-
-  dma_hw->sniff_data = 0xFFFFFFFF;
-
   switch_buffers();
 
   if (frame_crc != crc_previous_frame) {
-    Serial.printf("crc 32 calculated orig: 0x%08X\n", frame_crc);
-    Serial.printf("normal crc time diff:%d\n", normal_crc2 - normal_crc1);
-    Serial.printf("crc 32 dma sniffer: 0x%08X\n", dma_crc);
-    Serial.printf("crc 32 dma sniffer2: 0x%08X\n", dma_crc2);
-    Serial.printf("dma crc time diff:%d\n", dma_sniff2 - dma_sniff1);
+    Serial.printf("crc 32 with dma: 0x%08X\n", frame_crc);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
@@ -1507,12 +1490,9 @@ bool dmdreader_init(bool return_on_no_detection) {
   channel_config_set_dreq(&dmd_dma_channel_cfg,
                           pio_get_dreq(dmd_pio, dmd_sm, false));
 
-  // Make use of the built-in CRC32 calculator for duplicate frames.
-  // CRC-32 standard configurations:
-  // Bit-reverse and invert output to match standard bit-reflected CRC32
+  // Make use of the built-in CRC32 sniffer for duplicate frames.
   channel_config_set_sniff_enable(&dmd_dma_channel_cfg, true);
-  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
-  dma_hw->sniff_ctrl |= DMA_SNIFF_CTRL_OUT_INV_BITS; // Invert output bits
+  dma_sniffer_enable(dmd_dma_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32, true);
   dma_hw->sniff_data = 0xFFFFFFFF;
 
   // Configure the DMA channel. As soon as the PIO pushed a specified number
