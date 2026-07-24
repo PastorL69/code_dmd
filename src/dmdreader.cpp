@@ -926,7 +926,7 @@ void dmd_dma_handler() {
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
     Serial.printf("test crc official: %X08\n", test_crc);
-    Serial.printf("got legitimate frame: %X08\n", frame_crc);
+    Serial.printf("-- got legitimate frame: %X08\n", frame_crc);
   }
   memcpy(prev_crc, current_crc, crc_bytes);
 }
