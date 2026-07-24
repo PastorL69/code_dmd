@@ -21,8 +21,7 @@ typedef struct buf32_t {
 
 // SPI data types and header blocks
 // header block length should always be a multiple of 32bit
-#define SPI_BLOCK_PIX 0xcc33      // DMD frame
-#define SPI_BLOCK_PIX_CRC 0x44ee  // DMD frame with CRC32 checksum
+#define SPI_BLOCK_PIX 0x44ee  // DMD frame
 
 typedef struct __attribute__((__packed__)) block_header_t {
   uint16_t block_type;  // block type
@@ -34,15 +33,8 @@ typedef struct __attribute__((__packed__)) block_pix_header_t {
   uint16_t rows;          // number of rows
   uint16_t bitsperpixel;  // bits per pixel
   uint16_t padding;
+  uint32_t reserved;
 } block_pix_header_t __attribute__((aligned(4)));
-
-typedef struct __attribute__((__packed__)) block_pix_crc_header_t {
-  uint16_t columns;       // number of columns
-  uint16_t rows;          // number of rows
-  uint16_t bitsperpixel;  // bits per pixel
-  uint16_t padding;
-  uint32_t crc32;  // crc32 of the pixel data
-} block_pix_crc_header_t __attribute__((aligned(4)));
 
 DmdType dmd_type;
 
@@ -132,7 +124,7 @@ bool detected_1_0_0_0 = false;
 bool locked_in = false;
 bool plane0_shifted = false;
 bool loopback = false;
-bool filled_buffer;
+bool filled_buffer = false;
 
 // SPI PIO
 PIO spi_pio;
@@ -215,23 +207,6 @@ bool spi_busy() {
 }
 
 /**
- * @brief Abort running SPI transfers. This can be necessary in case the SPI
- * master hangs
- *
- */
-void spi_abort() {
-  if (dma_channel_is_busy(spi_dma_channel)) {
-    dma_channel_abort(spi_dma_channel);
-  }
-
-  if (!(pio_sm_is_tx_fifo_empty(spi_pio, spi_sm))) {
-    pio_sm_clear_fifos(spi_pio, spi_sm);
-  }
-
-  spi_dma_running = false;
-}
-
-/**
  * @brief Notify on pin SPI0_CS that data are ready on SPI
  *
  * The SPI master (the Pico is slave) should start a data transfer when this
@@ -252,16 +227,15 @@ void finish_spi() { digitalWrite(SPI0_CS, LOW); }
  *
  * @param pixbuf a frame to send
  */
-bool spi_send_pix(uint8_t *pixbuf, uint32_t crc32, bool skip_when_busy) {
-  block_header_t h = {.block_type = SPI_BLOCK_PIX_CRC};
-  block_pix_crc_header_t ph = {};
+bool spi_send_pix(uint8_t *pixbuf, bool skip_when_busy) {
+  block_header_t h = {.block_type = SPI_BLOCK_PIX};
+  block_pix_header_t ph = {};
 
   // round length to 4-byte blocks
   h.len = (((target_bytes + 3) / 4) * 4) + sizeof(h) + sizeof(ph);
   ph.columns = source_width;
   ph.rows = source_height;
   ph.bitsperpixel = target_bitsperpixel;
-  ph.crc32 = crc32;
 
   if (skip_when_busy) {
     if (spi_busy()) return false;
@@ -919,6 +893,7 @@ void dmd_dma_handler() {
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
   }
+  
   memcpy(prev_crc, current_crc, crc_bytes);
 }
 
@@ -1594,7 +1569,7 @@ void dmdreader_spi_init() {
 bool dmdreader_spi_send() {
   if (!loopback && frame_received) {
     frame_received = false;
-    spi_send_pix(framebuf_to_send, 0, true);
+    spi_send_pix(framebuf_to_send, true);
 
     return true;
   }
