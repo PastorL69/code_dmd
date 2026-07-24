@@ -571,14 +571,14 @@ upscale_4bit_0_4_to_0_15(uint32_t input) {
 void switch_buffers() {
   uint8_t *previousPlaneBuffer = currentPlaneBuffer;
   // Switch to next plane and frame buffers
-  if (currentPlaneBuffer == planebuf2) {
-    currentPlaneBuffer = planebuf1;
-    current_framebuf = framebuf1;
-    framebuf_to_send = framebuf2;
-  } else {
+  if (currentPlaneBuffer == planebuf1) {
     currentPlaneBuffer = planebuf2;
     current_framebuf = framebuf2;
-    framebuf_to_send = framebuf1;
+    framebuf_to_send = current_framebuf;
+  } else {
+    currentPlaneBuffer = planebuf1;
+    current_framebuf = framebuf1;
+    framebuf_to_send = current_framebuf;
   }
   if (source_planehistoryperframe > 0) {
     memcpy(&currentPlaneBuffer[source_bytesperplane *
