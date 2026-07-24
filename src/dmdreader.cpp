@@ -572,13 +572,13 @@ void switch_buffers() {
   uint8_t *previousPlaneBuffer = currentPlaneBuffer;
   // Switch to next plane and frame buffers
   if (currentPlaneBuffer == planebuf1) {
-    currentPlaneBuffer = planebuf2;
-    current_framebuf = framebuf2;
-    framebuf_to_send = framebuf1;
-  } else {
     currentPlaneBuffer = planebuf1;
     current_framebuf = framebuf1;
     framebuf_to_send = framebuf2;
+  } else {
+    currentPlaneBuffer = planebuf2;
+    current_framebuf = framebuf2;
+    framebuf_to_send = framebuf1;
   }
   if (source_planehistoryperframe > 0) {
     memcpy(&currentPlaneBuffer[source_bytesperplane *
@@ -920,7 +920,6 @@ void dmd_dma_handler() {
     Serial.printf("bank 0: %d", crc_list[0]);
     Serial.printf("bank 1: %d", crc_list[1]);
     Serial.printf("bank 2: %d", crc_list[2]);
-    Serial.printf("bank 3: %d", crc_list[3]);
     Serial.printf("time diff: %duS\n", now2-now1);
     Serial.printf("got legitimate frame: %08X\n", frame_crc);
   }
@@ -1470,7 +1469,7 @@ bool dmdreader_init(bool return_on_no_detection) {
     if (source_planehistoryperframe > 0) {
       if (source_planesperframe - source_planehistoryperframe == 1) {
         // WPC and any system using a similar history plane setup
-        crc_history_count = source_planesperframe + 1;
+        crc_history_count = source_planesperframe;
       } else if (source_planesperframe % source_planehistoryperframe == 0) {
         // Gottlieb: plane history is half the amount of total planes.
         crc_history_count = source_planesperframe / source_planehistoryperframe;
