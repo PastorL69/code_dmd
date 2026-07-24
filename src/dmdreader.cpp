@@ -897,6 +897,8 @@ void dmd_dma_handler() {
     }
   }
 
+  uint32_t now1 = micros();
+
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
@@ -913,7 +915,9 @@ void dmd_dma_handler() {
 
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
-    Serial.printf("got legitimate frame: %X08\n", frame_crc);
+    uint32_t now2 = micros();
+    Serial.printf("time diff: %duS\n", now2-now1);
+    Serial.printf("got legitimate frame: %08X\n", frame_crc);
   }
   memcpy(prev_crc, current_crc, crc_bytes);
 }
