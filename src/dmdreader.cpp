@@ -916,6 +916,11 @@ void dmd_dma_handler() {
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
     uint32_t now2 = micros();
+    uint32_t *crc_list = (uint32_t *)current_crc;
+    Serial.printf("bank 0: %d", crc_list[0]);
+    Serial.printf("bank 1: %d", crc_list[1]);
+    Serial.printf("bank 2: %d", crc_list[2]);
+    Serial.printf("bank 3: %d", crc_list[3]);
     Serial.printf("time diff: %duS\n", now2-now1);
     Serial.printf("got legitimate frame: %08X\n", frame_crc);
   }
