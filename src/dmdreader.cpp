@@ -629,6 +629,7 @@ void dmd_dma_reset() {
  *
  */
 void dmd_dma_handler() {
+  uint32_t now1 = micros();
   dmd_set_and_enable_new_dma_target();
 
   if (dmd_type == DMD_DE_X16_V2) {
@@ -899,6 +900,9 @@ void dmd_dma_handler() {
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
+
+  uint32_t now2 = micros();
+  Serial.printf("Timing diff: %duS\n", now2-now1);
 }
 
 void dmdreader_error_blink(bool no_error) {
