@@ -609,6 +609,8 @@ void dmd_dma_reset() {
  *
  */
 void dmd_dma_handler() {
+  uint32_t now1 = micros();
+
   // get the frame crc by sniffing the DMA transfer at no cpu cost
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
@@ -895,6 +897,8 @@ void dmd_dma_handler() {
   }
 
   memcpy(prev_crc, current_crc, crc_bytes);
+  uint32_t now2 = micros();
+  Serial.printf("Timing diff: %duS\n", now2-now1);
 }
 
 void dmdreader_error_blink(bool no_error) {
