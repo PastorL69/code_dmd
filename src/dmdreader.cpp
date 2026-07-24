@@ -132,6 +132,7 @@ bool detected_1_0_0_0 = false;
 bool locked_in = false;
 bool plane0_shifted = false;
 bool loopback = false;
+bool filled_buffer;
 
 // SPI PIO
 PIO spi_pio;
@@ -912,8 +913,11 @@ void dmd_dma_handler() {
   }
 
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
+    if (!filled_buffer) {
+      filled_buffer = true;
+      return;
+    }
     frame_received = true;
-    Serial.printf("got legitimate frame: %X08\n", frame_crc);
   }
   memcpy(prev_crc, current_crc, crc_bytes);
 }
