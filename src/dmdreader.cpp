@@ -925,7 +925,7 @@ void dmd_dma_handler() {
   Serial.printf("framebuf 1 crc: %X08\n", framebuf1_crc);
   Serial.printf("framebuf 2 crc: %X08\n", framebuf2_crc);
   Serial.printf("test crc main loop: %X08\n", test_crc);
-  Serial.printf("sent buff: %X08\n", framebuf_to_send);
+  Serial.printf("sent buff: %X08\n", sendbuff);
 
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
