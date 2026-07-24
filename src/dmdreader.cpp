@@ -914,10 +914,18 @@ void dmd_dma_handler() {
 
   uint32_t test_crc =
     crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
-  Serial.printf("test crc: %X08\n", test_crc);
+
+  uint32_t framebuf1_crc =
+    crc32(0, framebuf1, loopback ? source_bytes : target_bytes);
+  uint32_t framebuf2_crc =
+    crc32(0, framebuf2, loopback ? source_bytes : target_bytes);
+  Serial.printf("framebuf 1 crc: %X08\n", framebuf1_crc);
+  Serial.printf("framebuf 2 crc: %X08\n", framebuf2_crc);
+  Serial.printf("test crc main loop: %X08\n", test_crc);
 
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
+    Serial.printf("test crc official: %X08\n", test_crc);
     Serial.printf("got legitimate frame: %X08\n", frame_crc);
   }
   memcpy(prev_crc, current_crc, crc_bytes);
