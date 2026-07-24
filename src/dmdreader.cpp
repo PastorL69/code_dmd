@@ -902,6 +902,10 @@ void dmd_dma_handler() {
          loopback ? source_bytes : target_bytes);
 
   switch_buffers();
+  if (!filled_buffer) {
+    filled_buffer = true;
+    return;
+  }
 
   if (crc_bytes >= sizeof(uint32_t)) {
     memmove(&current_crc[0], &current_crc[sizeof(uint32_t)],
@@ -913,10 +917,6 @@ void dmd_dma_handler() {
   }
 
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
-    if (!filled_buffer) {
-      filled_buffer = true;
-      return;
-    }
     frame_received = true;
   }
   memcpy(prev_crc, current_crc, crc_bytes);
