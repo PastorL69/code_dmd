@@ -133,6 +133,7 @@ bool detected_1_0_0_0 = false;
 bool locked_in = false;
 bool plane0_shifted = false;
 bool loopback = false;
+bool filled_buffer = false;
 
 // SPI PIO
 PIO spi_pio;
@@ -928,6 +929,10 @@ void dmd_dma_handler() {
   Serial.printf("sent buff: %X08\n", sendbuff);
 
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
+    if (!filled_buffer) {
+      filled_buffer = true;
+      return;
+    }
     frame_received = true;
     Serial.printf("test crc official: %X08\n", test_crc);
     Serial.printf("-- got legitimate frame: %X08\n", frame_crc);
