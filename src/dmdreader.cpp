@@ -21,7 +21,7 @@ typedef struct buf32_t {
 
 // SPI data types and header blocks
 // header block length should always be a multiple of 32bit
-#define SPI_BLOCK_PIX 0x44ee  // DMD frame
+#define SPI_BLOCK_PIX 0xcc33  // DMD frame
 
 typedef struct __attribute__((__packed__)) block_header_t {
   uint16_t block_type;  // block type
@@ -32,8 +32,7 @@ typedef struct __attribute__((__packed__)) block_pix_header_t {
   uint16_t columns;       // number of columns
   uint16_t rows;          // number of rows
   uint16_t bitsperpixel;  // bits per pixel
-  uint16_t padding;
-  uint32_t reserved;
+  uint16_t padding;       // padding bits
 } block_pix_header_t __attribute__((aligned(4)));
 
 DmdType dmd_type;
