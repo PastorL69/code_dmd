@@ -1506,8 +1506,8 @@ bool dmdreader_init(bool return_on_no_detection) {
     memset(prev_crc, 0, crc_bytes);
   }
 
-  currentPlaneBuffer = planebuf1;
-  current_framebuf = framebuf2;
+  currentPlaneBuffer = planebuf2;
+  current_framebuf = framebuf1;
   framebuf_to_send = framebuf1;
 
   // Merge multiple planes to get the frame data.
