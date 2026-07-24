@@ -84,7 +84,6 @@ uint16_t source_lineoversampling;
 uint16_t source_dwordsperline;
 uint16_t source_mergeplanes;
 uint16_t offset[MAX_PLANESPERFRAME];
-uint32_t crc_history[MAX_PLANESPERFRAME];
 
 static uint8_t *alloc_aligned_buffer(size_t size, size_t alignment,
                                      void **base_out) {
@@ -119,8 +118,15 @@ uint8_t *framebuf3;
 uint8_t *current_framebuf;
 uint8_t *framebuf_to_send;
 
+// crc array used to prevent duplicate frames
+uint8_t *prev_crc;
+uint8_t *current_crc;
+
+size_t crc_bytes;
+
 uint32_t frame_crc = 0;
 uint32_t crc_previous_frame = 0;
+
 bool detected_0_1_0_1 = false;
 bool detected_1_0_0_0 = false;
 bool locked_in = false;
@@ -562,15 +568,6 @@ upscale_4bit_0_4_to_0_15(uint32_t input) {
 // upscale_4bit_0_4_to_0_15() END
 // -------------------------------
 
-// Keep track of the CRCs for planehistory systems
-void update_crc_history() {
-  crc_previous_frame = crc_history[0];
-  for (int i = 0; i < source_planehistoryperframe; i++) {
-    crc_history[i] = crc_history[i + 1];
-  }
-  crc_history[source_planehistoryperframe] = frame_crc;
-}
-
 void switch_buffers() {
   uint8_t *previousPlaneBuffer = currentPlaneBuffer;
   // Switch to next plane and frame buffers
@@ -589,7 +586,6 @@ void switch_buffers() {
                                 source_planehistoryperframe)],
            previousPlaneBuffer,
            source_bytesperplane * source_planehistoryperframe);
-    update_crc_history();
   }
 }
 
@@ -906,11 +902,20 @@ void dmd_dma_handler() {
 
   switch_buffers();
 
-  if (frame_crc != crc_previous_frame) {
-    Serial.printf("got frame: %d\n", frame_crc);
-    crc_previous_frame = frame_crc;
-    frame_received = true;
+  if (crc_bytes >= sizeof(uint32_t)) {
+    memmove(&current_crc[0], &current_crc[sizeof(uint32_t)],
+            crc_bytes - sizeof(uint32_t));
+    memcpy(&current_crc[crc_bytes - sizeof(uint32_t)], &frame_crc,
+           sizeof(uint32_t));
+  } else {
+    memcpy(current_crc, &frame_crc, sizeof(uint32_t));
   }
+
+  if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
+    frame_received = true;
+    Serial.printf("got legitimate frame: %X08\n", frame_crc);
+  }
+  memcpy(prev_crc, current_crc, crc_bytes);
 }
 
 void dmdreader_error_blink(bool no_error) {
@@ -1448,11 +1453,29 @@ bool dmdreader_init(bool return_on_no_detection) {
 
     size_t processing_bytes = source_bytes * source_lineoversampling;
 
+    // The CRC history needs to be configured here.
+    // 1 for non plane systems, 2 for Gottlieb, and 3 for WPC/similar systems.
+    // Any new systems that make use of a potential different plane/history 
+    // setup -> check code below to see if it grants a desired result.
+    uint8_t crc_history_count = 1;
+    if (source_planehistoryperframe > 0) {
+      if (source_planesperframe - source_planehistoryperframe == 1) {
+        // WPC and any system using a similar history plane setup
+        crc_history_count = source_planesperframe;
+      } else if (source_planesperframe % source_planehistoryperframe == 0) {
+        // Gottlieb: plane history is half the amount of total planes.
+        crc_history_count = source_planesperframe / source_planehistoryperframe;
+      }
+    }
+    crc_bytes = crc_history_count * sizeof(uint32_t);
+
     planebuf1 = alloc_aligned_buffer(plane_bytes, 4, nullptr);
     planebuf2 = alloc_aligned_buffer(plane_bytes, 4, nullptr);
     processingbuf = alloc_aligned_buffer(processing_bytes, 8, nullptr);
     framebuf1 = alloc_aligned_buffer(source_bytes, 8, nullptr);
     framebuf2 = alloc_aligned_buffer(source_bytes, 8, nullptr);
+    current_crc = alloc_aligned_buffer(crc_bytes, 4, nullptr);
+    prev_crc = alloc_aligned_buffer(crc_bytes, 4, nullptr);
     size_t framebuf3_bytes = target_bytes;
     size_t loopback_render_bytes =
         source_width * source_height * 4 / 8;  // 4bpp render buffer
@@ -1462,7 +1485,8 @@ bool dmdreader_init(bool return_on_no_detection) {
     framebuf3 = alloc_aligned_buffer(framebuf3_bytes, 8, nullptr);
 
     dmdreader_error_blink(planebuf1 && planebuf2 && processingbuf &&
-                          framebuf1 && framebuf2 && framebuf3);
+                          framebuf1 && framebuf2 && framebuf3 &&
+                          current_crc && prev_crc);
 
     memset(planebuf1, 0, plane_bytes);
     memset(planebuf2, 0, plane_bytes);
@@ -1470,6 +1494,8 @@ bool dmdreader_init(bool return_on_no_detection) {
     memset(framebuf1, 0, source_bytes);
     memset(framebuf2, 0, source_bytes);
     memset(framebuf3, 0, framebuf3_bytes);
+    memset(current_crc, 0, crc_bytes);
+    memset(prev_crc, 0, crc_bytes);
   }
 
   currentPlaneBuffer = planebuf2;
@@ -1480,7 +1506,6 @@ bool dmdreader_init(bool return_on_no_detection) {
   // Calculate offsets for the first pixel of each plane and cache these.
   for (int i = 0; i < MAX_PLANESPERFRAME; i++) {
     offset[i] = i * source_dwordsperplane;
-    crc_history[i] = 0; // initialize to 0
   }
 
   // Read a 128x16 frame but process as 128x32, so, change the number of
@@ -1565,7 +1590,7 @@ void dmdreader_spi_init() {
 bool dmdreader_spi_send() {
   if (!loopback && frame_received) {
     frame_received = false;
-    spi_send_pix(framebuf_to_send, frame_crc, true);
+    spi_send_pix(framebuf_to_send, 0, true);
 
     return true;
   }
