@@ -1465,7 +1465,7 @@ bool dmdreader_init(bool return_on_no_detection) {
     if (source_planehistoryperframe > 0) {
       if (source_planesperframe - source_planehistoryperframe == 1) {
         // WPC and any system using a similar history plane setup
-        crc_history_count = source_planesperframe;
+        crc_history_count = source_planesperframe + 1;
       } else if (source_planesperframe % source_planehistoryperframe == 0) {
         // Gottlieb: plane history is half the amount of total planes.
         crc_history_count = source_planesperframe / source_planehistoryperframe;
