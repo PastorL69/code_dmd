@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include "crc32.h"
 #include "dmd_counter.h"
 #include "dmd_interface.h"
 #include "dmdreader_pins.h"
@@ -910,6 +911,10 @@ void dmd_dma_handler() {
   } else {
     memcpy(current_crc, &frame_crc, sizeof(uint32_t));
   }
+
+  uint32_t test_crc =
+    crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
+  Serial.printf("test crc: %X08\n", test_crc);
 
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
