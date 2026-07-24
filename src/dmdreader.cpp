@@ -897,8 +897,6 @@ void dmd_dma_handler() {
     }
   }
 
-  uint32_t now1 = micros();
-
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
@@ -915,13 +913,7 @@ void dmd_dma_handler() {
 
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
-    uint32_t now2 = micros();
-    uint32_t *crc_list = (uint32_t *)current_crc;
-    Serial.printf("bank 0: %d", crc_list[0]);
-    Serial.printf("bank 1: %d", crc_list[1]);
-    Serial.printf("bank 2: %d", crc_list[2]);
-    Serial.printf("time diff: %duS\n", now2-now1);
-    Serial.printf("got legitimate frame: %08X\n", frame_crc);
+    Serial.printf("got legitimate frame: %X08\n", frame_crc);
   }
   memcpy(prev_crc, current_crc, crc_bytes);
 }
@@ -1023,7 +1015,7 @@ bool dmdreader_init(bool return_on_no_detection) {
       source_bitsperpixel = 2;
       target_bitsperpixel = 2;
       source_planesperframe = 3;
-      source_planehistoryperframe = 2;
+      source_planehistoryperframe = 0;
       source_lineoversampling = LINEOVERSAMPLING_NONE;
       source_mergeplanes = MERGEPLANES_ADD;
       break;
@@ -1508,7 +1500,7 @@ bool dmdreader_init(bool return_on_no_detection) {
 
   currentPlaneBuffer = planebuf2;
   current_framebuf = framebuf1;
-  framebuf_to_send = framebuf1;
+  framebuf_to_send = framebuf2;
 
   // Merge multiple planes to get the frame data.
   // Calculate offsets for the first pixel of each plane and cache these.
