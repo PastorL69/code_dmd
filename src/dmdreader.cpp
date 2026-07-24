@@ -301,11 +301,10 @@ uint64_t read_clock_count() {
 }
 
 DmdType detect_dmd() {
-
   uint64_t signals = read_clock_count();
   uint32_t dotclk = signals >> 32;
-  uint16_t rclk = signals >> 16; // never exceeds 25000
-  uint16_t rdata = signals; // never exceeds 600
+  uint16_t rclk = signals >> 16;  // never exceeds 25000
+  uint16_t rdata = signals;       // never exceeds 600
 
   // By checking DOTCLK, RCLK and RDATA we can identify system types
   // All values are based on a 1000ms sample of data
@@ -612,7 +611,7 @@ void dmd_dma_reset() {
 void dmd_dma_handler() {
   // get the frame crc by sniffing the DMA transfer at no cpu cost
   frame_crc = dma_hw->sniff_data;
-  dma_hw->sniff_data = 0xFFFFFFFF; // always clean after sniffing.
+  dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
 
   dmd_set_and_enable_new_dma_target();
 
@@ -645,7 +644,8 @@ void dmd_dma_handler() {
   // used. So only the new plane data is fixed here.
   for (int i = 0; i < source_dwordsperframe; i++) {
     v = (buf32_t *)planebuf;
-    *planebuf = (v->byte3 << 24) | (v->byte2 << 16) | (v->byte1 << 8) | (v->byte0);
+    *planebuf =
+        (v->byte3 << 24) | (v->byte2 << 16) | (v->byte1 << 8) | (v->byte0);
     planebuf++;
   }
 
@@ -769,8 +769,8 @@ void dmd_dma_handler() {
   if (dmd_type == DMD_DE_X16_V1 || dmd_type == DMD_DE_X16_V2) {
     // merge the rows and convert from 4bpp to 2bpp with a LUT
     uint32_t *dst, *src1, *src2;
-    dst = framebuf + 64; // start in the middle of 128x32 frame
-    src1 = framebuf + 511; // everything is stored from here onwards
+    dst = framebuf + 64;    // start in the middle of 128x32 frame
+    src1 = framebuf + offset_x16;  // everything is stored from here onwards
     src2 = src1 + source_dwordsperline;
 
     if (dmd_type == DMD_DE_X16_V1) {
@@ -893,7 +893,7 @@ void dmd_dma_handler() {
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
   }
-  
+
   memcpy(prev_crc, current_crc, crc_bytes);
 }
 
@@ -963,28 +963,15 @@ bool dmdreader_init(bool return_on_no_detection) {
 
   } while (dmd_type == DMD_UNKNOWN);
 
-  // Delay is still needed when blink gets removed above.
-  // delay(1000);
-
-  // Debug blinking to indicate the detected system:
-  /*
-    for (uint8_t i = 0; i < (dmd_type * 3); i++) {
-      digitalWrite(LED_BUILTIN, HIGH);
-      delay(200);
-      digitalWrite(LED_BUILTIN, LOW);
-      delay(200);
-    }
-  */
-
   // Initialize DMD reader
   switch (dmd_type) {
     case DMD_WPC: {
       uint input_pins[] = {RDATA};
-      dmdreader_programs_init(&dmd_reader_2bpp_program,
-                              dmd_reader_2bpp_program_get_default_config,
-                              &dmd_framedetect_generic_program,
-                              dmd_framedetect_generic_program_get_default_config,
-                              input_pins, 1, 0, SDATA);
+      dmdreader_programs_init(
+          &dmd_reader_2bpp_program, dmd_reader_2bpp_program_get_default_config,
+          &dmd_framedetect_generic_program,
+          dmd_framedetect_generic_program_get_default_config, input_pins, 1, 0,
+          SDATA);
 
       // load 4096 - 1 pixels directly to TX fifo
       pio_sm_put(dmd_pio, dmd_sm, 4095);
@@ -1022,16 +1009,15 @@ bool dmdreader_init(bool return_on_no_detection) {
       source_lineoversampling = LINEOVERSAMPLING_NONE;
       source_mergeplanes = MERGEPLANES_ADD;
       break;
-    }    
+    }
 
     case DMD_WHITESTAR: {
       uint input_pins[] = {RDATA};
       dmdreader_programs_init(
-          &dmd_reader_2bpp_program,
-          dmd_reader_2bpp_program_get_default_config,
+          &dmd_reader_2bpp_program, dmd_reader_2bpp_program_get_default_config,
           &dmd_framedetect_generic_program,
-          dmd_framedetect_generic_program_get_default_config, input_pins, 1,
-          0, SDATA);
+          dmd_framedetect_generic_program_get_default_config, input_pins, 1, 0,
+          SDATA);
 
       // load 8192 - 1 pixels directly to TX fifo
       pio_sm_put(dmd_pio, dmd_sm, 8191);
@@ -1074,11 +1060,11 @@ bool dmdreader_init(bool return_on_no_detection) {
 
     case DMD_SAM: {
       uint input_pins[] = {RDATA};
-      dmdreader_programs_init(&dmd_reader_4bpp_program,
-                              dmd_reader_4bpp_program_get_default_config,
-                              &dmd_framedetect_generic_program,
-                              dmd_framedetect_generic_program_get_default_config,
-                              input_pins, 1, 0, SDATA);
+      dmdreader_programs_init(
+          &dmd_reader_4bpp_program, dmd_reader_4bpp_program_get_default_config,
+          &dmd_framedetect_generic_program,
+          dmd_framedetect_generic_program_get_default_config, input_pins, 1, 0,
+          SDATA);
 
       // load 16384 - 1 pixels directly to TX fifo
       pio_sm_put(dmd_pio, dmd_sm, 16383);
@@ -1107,7 +1093,7 @@ bool dmdreader_init(bool return_on_no_detection) {
       // we need it to sample data on the rising edge
 
       source_width = 128;
-      source_height = 32; // is actually 16, but we process as 32
+      source_height = 32;       // is actually 16, but we process as 32
       source_bitsperpixel = 4;  // recorded as 4bpp in the pio
       target_bitsperpixel = 2;  // max pixel value is 3
       // in DE-Sega, there's only one plane,
@@ -1140,7 +1126,7 @@ bool dmdreader_init(bool return_on_no_detection) {
       pio_sm_put(frame_pio, frame_sm, 2500);
 
       source_width = 128;
-      source_height = 32; // is actually 16, but we process as 32
+      source_height = 32;       // is actually 16, but we process as 32
       source_bitsperpixel = 4;  // recorded as 4bpp in the pio
       target_bitsperpixel = 2;  // max pixvalues are 0, 1, 2, 3
       // in DE-Sega, there's only one plane,
@@ -1180,8 +1166,7 @@ bool dmdreader_init(bool return_on_no_detection) {
     case DMD_SEGA_HD: {
       uint input_pins[] = {RDATA};
       dmdreader_programs_init(
-          &dmd_reader_2bpp_program,
-          dmd_reader_2bpp_program_get_default_config,
+          &dmd_reader_2bpp_program, dmd_reader_2bpp_program_get_default_config,
           &dmd_framedetect_generic_program,
           dmd_framedetect_generic_program_get_default_config, input_pins, 1, 0,
           SDATA);
@@ -1206,8 +1191,7 @@ bool dmdreader_init(bool return_on_no_detection) {
     case DMD_GOTTLIEB: {
       uint input_pins[] = {RDATA};
       dmdreader_programs_init(
-          &dmd_reader_4bpp_program,
-          dmd_reader_4bpp_program_get_default_config,
+          &dmd_reader_4bpp_program, dmd_reader_4bpp_program_get_default_config,
           &dmd_framedetect_generic_program,
           dmd_framedetect_generic_program_get_default_config, input_pins, 1, 0,
           SDATA);
@@ -1254,8 +1238,7 @@ bool dmdreader_init(bool return_on_no_detection) {
     case DMD_ISLAND: {
       uint input_pins[] = {RDATA};
       dmdreader_programs_init(
-          &dmd_reader_4bpp_program,
-          dmd_reader_4bpp_program_get_default_config,
+          &dmd_reader_4bpp_program, dmd_reader_4bpp_program_get_default_config,
           &dmd_framedetect_generic_program,
           dmd_framedetect_generic_program_get_default_config, input_pins, 1, 0,
           SDATA);
@@ -1277,8 +1260,7 @@ bool dmdreader_init(bool return_on_no_detection) {
     case DMD_HOMEPIN: {
       uint input_pins[] = {RDATA};
       dmdreader_programs_init(
-          &dmd_reader_4bpp_program,
-          dmd_reader_4bpp_program_get_default_config,
+          &dmd_reader_4bpp_program, dmd_reader_4bpp_program_get_default_config,
           &dmd_framedetect_homepin_program,
           dmd_framedetect_homepin_program_get_default_config, input_pins, 1, 0,
           SDATA);
@@ -1305,8 +1287,9 @@ bool dmdreader_init(bool return_on_no_detection) {
                               &dmd_framedetect_capcom_program,
                               dmd_framedetect_capcom_program_get_default_config,
                               input_pins, 2, 0, SDATA);
-      // Spinball uses the WPC rendering method (timings are very close actually)
-      // The Capcom framedetect method is used to find the start of a frame
+      // Spinball uses the WPC rendering method (timings are very close
+      // actually) The Capcom framedetect method is used to find the start of a
+      // frame
 
       // load 4096 - 1 pixels directly to TX fifo
       pio_sm_put(dmd_pio, dmd_sm, 4095);
@@ -1326,12 +1309,11 @@ bool dmdreader_init(bool return_on_no_detection) {
 
     case DMD_SLEIC: {
       uint input_pins[] = {DE, RDATA};
-      dmdreader_programs_init(
-          &dmd_reader_2bpp_program,
-          dmd_reader_2bpp_program_get_default_config,
-          &dmd_framedetect_sleic_program,
-          dmd_framedetect_sleic_program_get_default_config, input_pins, 2,
-          DE, SDATA);
+      dmdreader_programs_init(&dmd_reader_2bpp_program,
+                              dmd_reader_2bpp_program_get_default_config,
+                              &dmd_framedetect_sleic_program,
+                              dmd_framedetect_sleic_program_get_default_config,
+                              input_pins, 2, DE, SDATA);
 
       // load 8192 - 1 pixels directly to TX fifo
       pio_sm_put(dmd_pio, dmd_sm, 8191);
@@ -1376,12 +1358,11 @@ bool dmdreader_init(bool return_on_no_detection) {
     case DMD_ROMSTAR:
     case DMD_CAPCOM_HD: {
       uint input_pins[] = {RDATA, RCLK};
-      dmdreader_programs_init(
-          &dmd_reader_4bpp_program,
-          dmd_reader_4bpp_program_get_default_config,
-          &dmd_framedetect_capcom_program,
-          dmd_framedetect_capcom_program_get_default_config, input_pins, 2,
-          0, SDATA);
+      dmdreader_programs_init(&dmd_reader_4bpp_program,
+                              dmd_reader_4bpp_program_get_default_config,
+                              &dmd_framedetect_capcom_program,
+                              dmd_framedetect_capcom_program_get_default_config,
+                              input_pins, 2, 0, SDATA);
 
       // load 16384 - 1 pixels directly to TX fifo
       pio_sm_put(dmd_pio, dmd_sm, 16383);
@@ -1434,7 +1415,7 @@ bool dmdreader_init(bool return_on_no_detection) {
 
     // The CRC history needs to be configured here.
     // 1 for non plane systems, 2 for Gottlieb, and 3 for WPC/similar systems.
-    // Any new systems that make use of a potential different plane/history 
+    // Any new systems that make use of a potential different plane/history
     // setup -> check code below to see if it grants a desired result.
     uint8_t crc_history_count = 1;
     if (source_planehistoryperframe > 0) {
@@ -1464,8 +1445,8 @@ bool dmdreader_init(bool return_on_no_detection) {
     framebuf3 = alloc_aligned_buffer(framebuf3_bytes, 8, nullptr);
 
     dmdreader_error_blink(planebuf1 && planebuf2 && processingbuf &&
-                          framebuf1 && framebuf2 && framebuf3 &&
-                          current_crc && prev_crc);
+                          framebuf1 && framebuf2 && framebuf3 && current_crc &&
+                          prev_crc);
 
     memset(planebuf1, 0, plane_bytes);
     memset(planebuf2, 0, plane_bytes);
@@ -1490,8 +1471,8 @@ bool dmdreader_init(bool return_on_no_detection) {
   // Read a 128x16 frame but process as 128x32, so, change the number of
   // transfers at this stage to trigger a dma transfer at the right time.
   if (dmd_type == DMD_DE_X16_V1 || dmd_type == DMD_DE_X16_V2) {
-      source_dwordsperframe /= 2;
-      source_dwordsperplane /= 2;
+    source_dwordsperframe /= 2;
+    source_dwordsperplane /= 2;
   }
 
   // DMA for DMD reader
