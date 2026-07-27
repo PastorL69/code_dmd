@@ -228,8 +228,6 @@ void finish_spi() { digitalWrite(SPI0_CS, LOW); }
 void spi_clean_exit() {
   static bool exit_executed = false;
   if (spi_busy() || exit_executed) {
-    Serial.printf("was busy or executed.\n");
-    delay(1);
     return;
   }
 
@@ -263,6 +261,7 @@ bool spi_send_pix(uint8_t *pixbuf, bool skip_when_busy) {
   spi_send_blocking((uint32_t *)&ph, sizeof(ph));
   spi_send_dma((uint32_t *)pixbuf, target_bytes);
   start_spi();
+  Serial.printf("SPI sent.\n");
 
   return true;
 }
