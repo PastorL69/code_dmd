@@ -917,6 +917,7 @@ void dmd_dma_handler() {
 
   switch_buffers();
   frame_received = true;
+  Serial.printf("frame/plane received: 0x%08X\n", frame_crc);
 }
 
 void dmdreader_error_blink(bool no_error) {
