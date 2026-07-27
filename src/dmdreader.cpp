@@ -1480,14 +1480,14 @@ bool dmdreader_init(bool return_on_no_detection) {
     dmdreader_error_blink(current_crc && prev_crc && planebuf1 && planebuf2 &&
                           processingbuf && framebuf1 && framebuf2 && framebuf3);
 
+    memset(current_crc, 0, crc_bytes);
+    memset(prev_crc, 0, crc_bytes);
     memset(planebuf1, 0, plane_bytes);
     memset(planebuf2, 0, plane_bytes);
     memset(processingbuf, 0, processing_bytes);
     memset(framebuf1, 0, source_bytes);
     memset(framebuf2, 0, source_bytes);
     memset(framebuf3, 0, framebuf3_bytes);
-    memset(current_crc, 0, crc_bytes);
-    memset(prev_crc, 0, crc_bytes);
   }
 
   currentPlaneBuffer = planebuf2;
