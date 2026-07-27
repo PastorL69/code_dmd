@@ -222,6 +222,23 @@ void start_spi() { digitalWrite(SPI0_CS, HIGH); }
 void finish_spi() { digitalWrite(SPI0_CS, LOW); }
 
 /**
+ * @brief Cleanly exit SPI by stopping the DMD pio and sending a blank dummy
+ * frame.
+ *
+ */
+void spi_clean_exit() {
+  static bool exit_executed = false;
+  if (spi_busy() || exit_executed) {
+    return;
+  }
+
+  pio_sm_set_enabled(dmd_pio, dmd_sm, false);
+  memset(framebuf1, 0, target_bytes);
+  memset(framebuf2, 0, target_bytes);
+  frame_received = exit_executed = true;
+}
+
+/**
  * @brief Send a pix buffer via SPI
  *
  * @param pixbuf a frame to send
@@ -1552,12 +1569,14 @@ void dmdreader_spi_init() {
   irq_set_enabled(DMA_IRQ_1, true);
 }
 
-bool dmdreader_spi_send() {
+bool dmdreader_spi_send(bool is_restarting) {
   if (!loopback && frame_received) {
     frame_received = false;
     spi_send_pix(framebuf_to_send, true);
 
     return true;
+  } else if (is_restarting) {
+    spi_clean_exit();
   }
 
   return false;
