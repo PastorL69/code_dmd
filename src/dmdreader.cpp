@@ -222,7 +222,8 @@ void start_spi() { digitalWrite(SPI0_CS, HIGH); }
 void finish_spi() { digitalWrite(SPI0_CS, LOW); }
 
 /**
- * @brief Exit SPI by stopping the DMD pio and sending a blank dummy frame.
+ * @brief Cleanly exit SPI by stopping the DMD pio and sending a blank dummy
+ * frame.
  *
  */
 void spi_clean_exit() {
@@ -235,7 +236,6 @@ void spi_clean_exit() {
   memset(framebuf1, 0, target_bytes);
   memset(framebuf2, 0, target_bytes);
   frame_received = exit_executed = true;
-  Serial.printf("Executed! done.\n");
 }
 
 /**
@@ -261,7 +261,6 @@ bool spi_send_pix(uint8_t *pixbuf, bool skip_when_busy) {
   spi_send_blocking((uint32_t *)&ph, sizeof(ph));
   spi_send_dma((uint32_t *)pixbuf, target_bytes);
   start_spi();
-  Serial.printf("SPI sent.\n");
 
   return true;
 }
