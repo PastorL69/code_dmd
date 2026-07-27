@@ -608,11 +608,34 @@ void dmd_dma_reset() {
  *
  */
 void dmd_dma_handler() {
-  // get the frame crc by sniffing the DMA transfer at no cpu cost
+  // get the frame crc by sniffing the DMA transfer at no cpu cost.
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
 
   dmd_set_and_enable_new_dma_target();
+
+  // first buffer contains nothing due to switch logic, so skip this one.
+  if (!filled_buffer) {
+    switch_buffers();
+    filled_buffer = true;
+    return;
+  }
+
+  // update the CRC arrays.
+  if (crc_bytes >= sizeof(uint32_t)) {
+    memmove(&current_crc[0], &current_crc[sizeof(uint32_t)],
+            crc_bytes - sizeof(uint32_t));
+    memcpy(&current_crc[crc_bytes - sizeof(uint32_t)], &frame_crc,
+           sizeof(uint32_t));
+  } else {
+    memcpy(current_crc, &frame_crc, sizeof(uint32_t));
+  }
+
+  // save processing time -> exit early if we find out the frame is a duplicate.
+  if (std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
+    memcpy(prev_crc, current_crc, crc_bytes);
+    return;
+  }
 
   if (dmd_type == DMD_DE_X16_V2) {
     // Due to the complexity of x16 v2, we use this way to re-sync
@@ -871,29 +894,12 @@ void dmd_dma_handler() {
     }
   }
 
+  memcpy(prev_crc, current_crc, crc_bytes);
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
   switch_buffers();
-  if (!filled_buffer) {
-    filled_buffer = true;
-    return;
-  }
-
-  if (crc_bytes >= sizeof(uint32_t)) {
-    memmove(&current_crc[0], &current_crc[sizeof(uint32_t)],
-            crc_bytes - sizeof(uint32_t));
-    memcpy(&current_crc[crc_bytes - sizeof(uint32_t)], &frame_crc,
-           sizeof(uint32_t));
-  } else {
-    memcpy(current_crc, &frame_crc, sizeof(uint32_t));
-  }
-
-  if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
-    frame_received = true;
-  }
-
-  memcpy(prev_crc, current_crc, crc_bytes);
+  frame_received = true;
 }
 
 void dmdreader_error_blink(bool no_error) {
