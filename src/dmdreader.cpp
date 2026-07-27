@@ -629,7 +629,7 @@ void dmd_dma_handler() {
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
 
-  //Serial.printf("Real-time CRC: %08X\n", frame_crc);
+  Serial.printf("Real-time CRC: %08X\n", frame_crc);
   //Serial.printf("framebuf CRC: %08X\n", current_framebuf);
 
   dmd_set_and_enable_new_dma_target();
