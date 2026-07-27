@@ -229,6 +229,7 @@ void spi_clean_exit() {
   static bool exit_executed = false;
   if (spi_busy() || exit_executed) {
     Serial.printf("was busy or executed.\n");
+    delay(1);
     return;
   }
 
