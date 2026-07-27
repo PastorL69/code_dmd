@@ -228,12 +228,15 @@ void finish_spi() { digitalWrite(SPI0_CS, LOW); }
 void spi_clean_exit() {
   static bool exit_executed = false;
   if (spi_busy() || exit_executed) {
+    Serial.printf("was busy or executed.\n");
     return;
   }
+
   pio_sm_set_enabled(dmd_pio, dmd_sm, false);
   memset(framebuf1, 0, target_bytes);
   memset(framebuf2, 0, target_bytes);
   frame_received = exit_executed = true;
+  Serial.printf("Executed! done.\n");
 }
 
 /**
