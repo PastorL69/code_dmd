@@ -648,6 +648,7 @@ void save_previous_crc() {
  *
  */
 void dmd_dma_handler() {
+  uint32_t now1 = micros();
   // get the frame crc by sniffing the DMA transfer at no cpu cost.
   // must be called before setting a new dma target!
   frame_crc = dma_hw->sniff_data;
@@ -929,6 +930,8 @@ void dmd_dma_handler() {
   }
 
   save_previous_crc();
+  uint32_t now2 = micros();
+  Serial.printf("time gap: %duS\n", now2 - now1);
 }
 
 void dmdreader_error_blink(bool no_error) {
