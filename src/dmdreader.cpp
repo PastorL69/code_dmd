@@ -621,11 +621,35 @@ void dmd_dma_reset() {
 }
 
 /**
+ * @brief Updates the current CRC array with the new frame CRC hash.
+ *
+ */
+void save_current_crc() {
+  if (crc_bytes >= sizeof(uint32_t)) {
+    memmove(&current_crc[0], &current_crc[sizeof(uint32_t)],
+            crc_bytes - sizeof(uint32_t));
+    memcpy(&current_crc[crc_bytes - sizeof(uint32_t)], &frame_crc,
+           sizeof(uint32_t));
+  } else {
+    memcpy(current_crc, &frame_crc, sizeof(uint32_t));
+  }
+}
+
+/**
+ * @brief Updates the previous CRC array with the current CRC array.
+ *
+ */
+void save_previous_crc() {
+  memcpy(prev_crc, current_crc, crc_bytes);
+}
+
+/**
  * @brief Handles DMD DMA requests by switching between the buffers
  *
  */
 void dmd_dma_handler() {
-  // get the frame crc by sniffing the DMA transfer at no cpu cost
+  // get the frame crc by sniffing the DMA transfer at no cpu cost.
+  // must be called before setting a new dma target!
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
 
@@ -897,20 +921,13 @@ void dmd_dma_handler() {
     return;
   }
 
-  if (crc_bytes >= sizeof(uint32_t)) {
-    memmove(&current_crc[0], &current_crc[sizeof(uint32_t)],
-            crc_bytes - sizeof(uint32_t));
-    memcpy(&current_crc[crc_bytes - sizeof(uint32_t)], &frame_crc,
-           sizeof(uint32_t));
-  } else {
-    memcpy(current_crc, &frame_crc, sizeof(uint32_t));
-  }
-
+  save_current_crc();
+  // perform a comparison check to see if the current CRC bytes differ
   if (!std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     frame_received = true;
   }
 
-  memcpy(prev_crc, current_crc, crc_bytes);
+  save_previous_crc();
 }
 
 void dmdreader_error_blink(bool no_error) {
@@ -1430,28 +1447,28 @@ bool dmdreader_init(bool return_on_no_detection) {
     size_t processing_bytes = source_bytes * source_lineoversampling;
 
     // The CRC history needs to be configured here.
-    // 1 for non plane systems, 2 for Gottlieb, and 3 for WPC/similar systems.
-    // Any new systems that make use of a potential different plane/history
-    // setup -> check code below to see if it grants a desired result.
+    // 1 for non planehistory systems, 2 for Gottlieb, and 3 for WPC/similar
+    // systems. Any new systems that make use of a potential different
+    // planehistory setup: double check code below.
     uint8_t crc_history_count = 1;
     if (source_planehistoryperframe > 0) {
       if (source_planesperframe - source_planehistoryperframe == 1) {
-        // WPC and any system using a similar history plane setup
+        // WPC: planehistory is sourceplanesperframe - 1.
         crc_history_count = source_planesperframe;
       } else if (source_planesperframe % source_planehistoryperframe == 0) {
-        // Gottlieb: plane history is half the amount of total planes.
+        // Gottlieb: planehistory is half the amount of total planes.
         crc_history_count = source_planesperframe / source_planehistoryperframe;
       }
     }
     crc_bytes = crc_history_count * sizeof(uint32_t);
 
+    current_crc = alloc_aligned_buffer(crc_bytes, 4, nullptr);
+    prev_crc = alloc_aligned_buffer(crc_bytes, 4, nullptr);
     planebuf1 = alloc_aligned_buffer(plane_bytes, 4, nullptr);
     planebuf2 = alloc_aligned_buffer(plane_bytes, 4, nullptr);
     processingbuf = alloc_aligned_buffer(processing_bytes, 8, nullptr);
     framebuf1 = alloc_aligned_buffer(source_bytes, 8, nullptr);
     framebuf2 = alloc_aligned_buffer(source_bytes, 8, nullptr);
-    current_crc = alloc_aligned_buffer(crc_bytes, 4, nullptr);
-    prev_crc = alloc_aligned_buffer(crc_bytes, 4, nullptr);
     size_t framebuf3_bytes = target_bytes;
     size_t loopback_render_bytes =
         source_width * source_height * 4 / 8;  // 4bpp render buffer
@@ -1460,9 +1477,8 @@ bool dmdreader_init(bool return_on_no_detection) {
     }
     framebuf3 = alloc_aligned_buffer(framebuf3_bytes, 8, nullptr);
 
-    dmdreader_error_blink(planebuf1 && planebuf2 && processingbuf &&
-                          framebuf1 && framebuf2 && framebuf3 && current_crc &&
-                          prev_crc);
+    dmdreader_error_blink(current_crc && prev_crc && planebuf1 && planebuf2 &&
+                          processingbuf && framebuf1 && framebuf2 && framebuf3);
 
     memset(planebuf1, 0, plane_bytes);
     memset(planebuf2, 0, plane_bytes);
