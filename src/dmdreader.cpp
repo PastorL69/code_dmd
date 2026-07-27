@@ -636,6 +636,8 @@ void dmd_dma_handler() {
 
   // first buffer contains nothing due to switch logic, so skip this one.
   if (!filled_buffer) {
+    memcpy(current_framebuf, processingbuf,
+        loopback ? source_bytes : target_bytes);
     Serial.printf("skipped!");
     switch_buffers();
     filled_buffer = true;
