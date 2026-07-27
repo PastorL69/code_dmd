@@ -633,7 +633,10 @@ void dmd_dma_handler() {
 
   // first buffer contains nothing due to switch logic, so skip this one.
   if (!filled_buffer) {
-    Serial.printf("skipped!");
+    delay(1);
+    Serial.printf("skipped!\n");
+    Serial.printf("Real-time CRC: %08X\n", frame_crc);
+    Serial.printf("framebuf to send skipped: %08X\n", framebuf_to_send);
     switch_buffers();
     filled_buffer = true;
     return;
@@ -652,10 +655,10 @@ void dmd_dma_handler() {
   // save processing time -> exit early if we find out the frame is a duplicate.
   if (std::is_permutation(current_crc, current_crc + crc_bytes, prev_crc)) {
     memcpy(prev_crc, current_crc, crc_bytes);
+    Serial.printf("framebuf to send: %08X\n", framebuf_to_send);
+    Serial.printf("Real-time CRC: %08X\n", frame_crc);
     return;
   }
-
-  Serial.printf("Real-time CRC: %08X\n", frame_crc);
 
   if (dmd_type == DMD_DE_X16_V2) {
     // Due to the complexity of x16 v2, we use this way to re-sync
