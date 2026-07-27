@@ -629,9 +629,6 @@ void dmd_dma_handler() {
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
 
-  Serial.printf("Real-time CRC: %08X\n", frame_crc);
-  //Serial.printf("framebuf CRC: %08X\n", current_framebuf);
-
   dmd_set_and_enable_new_dma_target();
 
   // first buffer contains nothing due to switch logic, so skip this one.
@@ -657,6 +654,8 @@ void dmd_dma_handler() {
     memcpy(prev_crc, current_crc, crc_bytes);
     return;
   }
+
+  Serial.printf("Real-time CRC: %08X\n", frame_crc);
 
   if (dmd_type == DMD_DE_X16_V2) {
     // Due to the complexity of x16 v2, we use this way to re-sync
