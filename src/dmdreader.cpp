@@ -232,8 +232,8 @@ void spi_clean_exit() {
   }
   pio_sm_set_enabled(dmd_pio, dmd_sm, false);
   memset(framebuf1, 0, target_bytes);
-  spi_send_pix(framebuf1, false);
-  exit_executed = true;
+  memset(framebuf2, 0, target_bytes);
+  frame_received = exit_executed = true;
 }
 
 /**
