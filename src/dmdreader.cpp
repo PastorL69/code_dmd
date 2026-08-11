@@ -627,20 +627,11 @@ void dmd_dma_reset() {
 }
 
 /**
- * @brief Sniffs the processed array to prepare for CRC32 extraction
- *
- */
-void dmd_set_and_enable_new_dma_sniffer() {
-  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
-                                       loopback ? source_bytes : target_bytes);
-  dma_channel_wait_for_finish_blocking(dma_sniff_channel); // waiting is required.
-}
-
-/**
  * @brief Handles DMD DMA requests by switching between the buffers
  *
  */
 void dmd_dma_handler() {
+  uint32_t now1 = micros();
   dmd_set_and_enable_new_dma_target();
 
   if (dmd_type == DMD_DE_X16_V2) {
@@ -899,10 +890,14 @@ void dmd_dma_handler() {
     }
   }
 
+  dma_channel_set_trans_count(dma_sniff_channel,
+                              loopback ? source_bytes : target_bytes, true);
+
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
-  dmd_set_and_enable_new_dma_sniffer();
+  dma_channel_wait_for_finish_blocking(
+      dma_sniff_channel);  // waiting is required.
 
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
@@ -912,6 +907,9 @@ void dmd_dma_handler() {
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
     frame_received = true;
+    uint32_t now2 = micros();
+    Serial.printf("CRC VAL = 0x%08X\n", frame_crc);
+    Serial.printf("timing diff: %d\n", now2-now1);
   }
 }
 
@@ -1535,10 +1533,10 @@ bool dmdreader_init(bool return_on_no_detection) {
 
   dma_channel_configure(
       dma_sniff_channel, &dma_sniff_channel_cfg,
-      dummy_sniff_dst,   // The (unchanging) dummy write address
-      current_framebuf,  // The (unchanging) read address
-      0,                 // We do not know the transfer count yet
-      false              // Do not yet start!
+      dummy_sniff_dst,  // The (unchanging) dummy write address
+      processingbuf,    // The (unchanging) read address
+      0,                // We do not know the transfer count yet
+      false             // Do not yet start!
   );
 
   // Finally start DMD reader PIO program and DMA
