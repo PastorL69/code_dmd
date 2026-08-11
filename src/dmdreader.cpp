@@ -896,6 +896,8 @@ void dmd_dma_handler() {
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
+  dma_channel_set_read_addr(dma_sniff_channel,
+                                 current_framebuf, false);
   dma_channel_set_transfer_count(dma_sniff_channel,
                                  loopback ? source_bytes : target_bytes, true);
   dma_channel_wait_for_finish_blocking(
