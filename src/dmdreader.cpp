@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "crc32.h"
 #include "dmd_counter.h"
 #include "dmd_interface.h"
 #include "dmdreader_pins.h"
@@ -903,8 +902,6 @@ void dmd_dma_handler() {
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
-  // frame_crc =
-  //     crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
   dmd_set_and_enable_new_dma_sniffer();
 
   frame_crc = dma_hw->sniff_data;
