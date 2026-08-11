@@ -890,14 +890,14 @@ void dmd_dma_handler() {
     }
   }
 
-  dma_channel_set_trans_count(dma_sniff_channel,
-                              loopback ? source_bytes : target_bytes, true);
-
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
+  dma_channel_set_trans_count(dma_sniff_channel,
+                              loopback ? source_bytes : target_bytes, true);
+
   dma_channel_wait_for_finish_blocking(
-      dma_sniff_channel);  // waiting is required.
+      dma_sniff_channel);  // waiting is required if still busy.
 
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
