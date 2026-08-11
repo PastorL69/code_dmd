@@ -642,7 +642,6 @@ void dmd_set_and_enable_new_dma_sniffer() {
  *
  */
 void dmd_dma_handler() {
-  uint32_t nower1 = micros();
 
   dmd_set_and_enable_new_dma_target();
 
@@ -905,9 +904,9 @@ void dmd_dma_handler() {
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
-  // frame_crc =
-  //     crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
+  uint32_t nower1 = micros();
   dmd_set_and_enable_new_dma_sniffer();
+  uint32_t nower2 = micros();
 
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
@@ -917,7 +916,6 @@ void dmd_dma_handler() {
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
     frame_received = true;
-    uint32_t nower2 = micros();
     Serial.printf("CRC VAL = %d\n", frame_crc);
     Serial.printf("time diff: %d\n", nower2-nower1);
   }
