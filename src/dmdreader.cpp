@@ -119,6 +119,7 @@ uint8_t *framebuf3;
 uint8_t *current_framebuf;
 uint8_t *framebuf_to_send;
 
+uint8_t dummy_sniff_dst[1];
 uint32_t frame_crc = 0;
 uint32_t crc_previous_frame = 0;
 bool detected_0_1_0_1 = false;
@@ -142,9 +143,11 @@ uint frame_offset;
 
 // DMA
 uint dmd_dma_channel;
+uint dma_sniff_channel;
 uint spi_dma_channel;
 
 dma_channel_config dmd_dma_channel_cfg;
+dma_channel_config dma_sniff_channel_cfg;
 dma_channel_config spi_dma_channel_cfg;
 
 volatile bool spi_dma_running = false;
@@ -625,6 +628,16 @@ void dmd_dma_reset() {
 }
 
 /**
+ * @brief Sniffs the processed array to prepare for CRC32 extraction
+ *
+ */
+void dmd_set_and_enable_new_dma_sniffer() {
+  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
+                                       loopback ? source_bytes : target_bytes);
+  dma_channel_wait_for_finish_blocking(dma_sniff_channel); // waiting is required.
+}
+
+/**
  * @brief Handles DMD DMA requests by switching between the buffers
  *
  */
@@ -890,8 +903,12 @@ void dmd_dma_handler() {
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
-  frame_crc =
-      crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
+  // frame_crc =
+  //     crc32(0, current_framebuf, loopback ? source_bytes : target_bytes);
+  dmd_set_and_enable_new_dma_sniffer();
+
+  frame_crc = dma_hw->sniff_data;
+  dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
 
   switch_buffers();
 
@@ -1505,6 +1522,28 @@ bool dmdreader_init(bool return_on_no_detection) {
   irq_set_exclusive_handler(DMA_IRQ_0, dmd_dma_handler);
   irq_set_enabled(DMA_IRQ_0, true);
 #endif
+
+  // CRC32 DMA sniffer for DMD reader
+  dma_sniff_channel = dma_claim_unused_channel(true);
+  dma_sniff_channel_cfg = dma_channel_get_default_config(dma_sniff_channel);
+  channel_config_set_transfer_data_size(&dma_sniff_channel_cfg, DMA_SIZE_8);
+  channel_config_set_read_increment(&dma_sniff_channel_cfg, true);
+  channel_config_set_write_increment(&dma_sniff_channel_cfg, false);
+
+  // (bit-reverse) CRC32 specific sniff set-up
+  channel_config_set_sniff_enable(&dma_sniff_channel_cfg, true);
+  dma_sniffer_set_data_accumulator(0xFFFFFFFF);
+  dma_sniffer_set_output_reverse_enabled(true);
+  dma_sniffer_enable(dma_sniff_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
+
+  dma_channel_configure(
+      dma_sniff_channel, &dma_sniff_channel_cfg,
+      dummy_sniff_dst,   // The (unchanging) dummy write address
+      current_framebuf,  // The (unchanging) read address
+      0,                 // We do not know the transfer count yet
+      false              // Do not yet start!
+  );
+
   // Finally start DMD reader PIO program and DMA
   dmd_set_and_enable_new_dma_target();
   pio_sm_set_enabled(frame_pio, frame_sm, true);
