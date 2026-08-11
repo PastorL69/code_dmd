@@ -915,10 +915,10 @@ void dmd_dma_handler() {
   switch_buffers();
 
   if (frame_crc != crc_previous_frame) {
-    Serial.printf("CRC VAL = %d\n", frame_crc);
     crc_previous_frame = frame_crc;
     frame_received = true;
     uint32_t nower2 = micros();
+    Serial.printf("CRC VAL = %d\n", frame_crc);
     Serial.printf("time diff: %d\n", nower2-nower1);
   }
 }
