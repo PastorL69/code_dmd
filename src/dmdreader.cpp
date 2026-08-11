@@ -23,7 +23,6 @@ typedef struct buf32_t {
 // SPI data types and header blocks
 // header block length should always be a multiple of 32bit
 #define SPI_BLOCK_PIX 0xcc33      // DMD frame
-#define SPI_BLOCK_PIX_CRC 0x44ee  // DMD frame with CRC32 checksum
 
 typedef struct __attribute__((__packed__)) block_header_t {
   uint16_t block_type;  // block type
@@ -34,16 +33,8 @@ typedef struct __attribute__((__packed__)) block_pix_header_t {
   uint16_t columns;       // number of columns
   uint16_t rows;          // number of rows
   uint16_t bitsperpixel;  // bits per pixel
-  uint16_t padding;
+  uint16_t padding;       // padding bits
 } block_pix_header_t __attribute__((aligned(4)));
-
-typedef struct __attribute__((__packed__)) block_pix_crc_header_t {
-  uint16_t columns;       // number of columns
-  uint16_t rows;          // number of rows
-  uint16_t bitsperpixel;  // bits per pixel
-  uint16_t padding;
-  uint32_t crc32;  // crc32 of the pixel data
-} block_pix_crc_header_t __attribute__((aligned(4)));
 
 DmdType dmd_type;
 
@@ -248,16 +239,15 @@ void finish_spi() { digitalWrite(SPI0_CS, LOW); }
  *
  * @param pixbuf a frame to send
  */
-bool spi_send_pix(uint8_t *pixbuf, uint32_t crc32, bool skip_when_busy) {
-  block_header_t h = {.block_type = SPI_BLOCK_PIX_CRC};
-  block_pix_crc_header_t ph = {};
+bool spi_send_pix(uint8_t *pixbuf, bool skip_when_busy) {
+  block_header_t h = {.block_type = SPI_BLOCK_PIX};
+  block_pix_header_t ph = {};
 
   // round length to 4-byte blocks
   h.len = (((target_bytes + 3) / 4) * 4) + sizeof(h) + sizeof(ph);
   ph.columns = source_width;
   ph.rows = source_height;
   ph.bitsperpixel = target_bitsperpixel;
-  ph.crc32 = crc32;
 
   if (skip_when_busy) {
     if (spi_busy()) return false;
@@ -1591,7 +1581,7 @@ void dmdreader_spi_init() {
 bool dmdreader_spi_send() {
   if (!loopback && frame_received) {
     frame_received = false;
-    spi_send_pix(framebuf_to_send, frame_crc, true);
+    spi_send_pix(framebuf_to_send, true);
 
     return true;
   }
