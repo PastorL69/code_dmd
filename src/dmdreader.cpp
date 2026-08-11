@@ -642,6 +642,8 @@ void dmd_set_and_enable_new_dma_sniffer() {
  *
  */
 void dmd_dma_handler() {
+  uint32_t nower1 = micros();
+
   dmd_set_and_enable_new_dma_target();
 
   if (dmd_type == DMD_DE_X16_V2) {
@@ -916,6 +918,8 @@ void dmd_dma_handler() {
     Serial.printf("CRC VAL = %d\n", frame_crc);
     crc_previous_frame = frame_crc;
     frame_received = true;
+    uint32_t nower2 = micros();
+    Serial.printf("time diff: %d\n", nower2-nower1);
   }
 }
 
