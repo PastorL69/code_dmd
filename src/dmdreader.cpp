@@ -1534,7 +1534,7 @@ bool dmdreader_init(bool return_on_no_detection) {
   dma_channel_configure(
       dma_sniff_channel, &dma_sniff_channel_cfg,
       dummy_sniff_dst,  // The (unchanging) dummy write address
-      processingbuf,    // The (unchanging) read address
+      current_framebuf,    // The (unchanging) read address
       0,                // We do not know the transfer count yet
       false             // Do not yet start!
   );
