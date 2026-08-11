@@ -890,11 +890,11 @@ void dmd_dma_handler() {
     }
   }
 
+  dma_channel_transfer_from_buffer_now(dma_sniff_channel, processingbuf,
+                                      loopback ? source_bytes : target_bytes);
+
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
-
-  dma_channel_set_trans_count(dma_sniff_channel,
-                              loopback ? source_bytes : target_bytes, true);
 
   dma_channel_wait_for_finish_blocking(
       dma_sniff_channel);  // waiting is required if still busy.
