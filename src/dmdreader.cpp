@@ -627,6 +627,16 @@ void dmd_dma_reset() {
 }
 
 /**
+ * @brief Sniffs the processed array to prepare for CRC32 extraction
+ *
+ */
+void dmd_set_and_enable_new_dma_sniffer() {
+  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
+                                       loopback ? source_bytes : target_bytes);
+  dma_channel_wait_for_finish_blocking(dma_sniff_channel); // waiting is required.
+}
+
+/**
  * @brief Handles DMD DMA requests by switching between the buffers
  *
  */
@@ -890,16 +900,10 @@ void dmd_dma_handler() {
     }
   }
 
-  // dma_channel_transfer_from_buffer_now(dma_sniff_channel, processingbuf,
-  //                                     loopback ? source_bytes : target_bytes);
-  dma_channel_set_read_addr(dma_sniff_channel,
-                                 processingbuf, true);
-
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
-  dma_channel_wait_for_finish_blocking(
-      dma_sniff_channel);  // waiting is required if still busy.
+  dmd_set_and_enable_new_dma_sniffer();
 
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing.
@@ -1534,11 +1538,11 @@ bool dmdreader_init(bool return_on_no_detection) {
   dma_sniffer_enable(dma_sniff_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
 
   dma_channel_configure(
-    dma_sniff_channel, &dma_sniff_channel_cfg,
-    dummy_sniff_dst,   // The (unchanging) dummy write address
-    processingbuf,  // The (unchanging) read address
-    source_bytes * source_lineoversampling, // We do not know the transfer count yet
-    false              // Do not yet start!
+      dma_sniff_channel, &dma_sniff_channel_cfg,
+      dummy_sniff_dst,   // The (unchanging) dummy write address
+      current_framebuf,  // The (unchanging) read address
+      0,                 // We do not know the transfer count yet
+      false              // Do not yet start!
   );
 
   // Finally start DMD reader PIO program and DMA
