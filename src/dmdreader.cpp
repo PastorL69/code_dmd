@@ -635,21 +635,6 @@ void dmd_dma_reset() {
 }
 
 /**
- * @brief Takes the freshly processed frame array and runs it through a dummy
- * DMA transfer. This is required to sniff the CRC32.
- *
- */
-void dmd_prepare_dma_sniffer() {
-  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
-                                       loopback ? source_bytes : target_bytes);
-  // uint32_t now1 = micros();
-  dma_channel_wait_for_finish_blocking(
-      dma_sniff_channel);  // waiting is required.
-  // uint32_t now2 = micros();
-  // Serial.printf("dma waiting time: %duS\n", now2-now1);
-}
-
-/**
  * @brief Handles DMD DMA requests by switching between the buffers
  *
  */
@@ -914,12 +899,11 @@ void dmd_dma_handler() {
     }
   }
 
+  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
+                                       loopback ? source_bytes : target_bytes);
+
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
-
-  dmd_prepare_dma_sniffer();
-  frame_crc = dma_hw->sniff_data;
-  dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing!
 
   switch_buffers();
 
@@ -928,6 +912,11 @@ void dmd_dma_handler() {
     filled_buffer = true;
     return;
   }
+
+  // wait incase the dummy DMA sniffing transfer has not finished yet
+  dma_channel_wait_for_finish_blocking(dma_sniff_channel);
+  frame_crc = dma_hw->sniff_data;
+  dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing!
 
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
