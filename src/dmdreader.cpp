@@ -117,6 +117,7 @@ bool detected_1_0_0_0 = false;
 bool locked_in = false;
 bool plane0_shifted = false;
 bool loopback = false;
+bool filled_buffer = false;
 
 // SPI PIO
 PIO spi_pio;
@@ -912,11 +913,15 @@ void dmd_dma_handler() {
          loopback ? source_bytes : target_bytes);
 
   dmd_prepare_dma_sniffer();
+  switch_buffers();
+
+  if (!filled_buffer) {
+    filled_buffer = true;
+    return;
+  }
 
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing!
-
-  switch_buffers();
 
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
