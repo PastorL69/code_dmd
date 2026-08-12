@@ -913,15 +913,16 @@ void dmd_dma_handler() {
          loopback ? source_bytes : target_bytes);
 
   dmd_prepare_dma_sniffer();
+  frame_crc = dma_hw->sniff_data;
+  dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing!
+
   switch_buffers();
 
+  // first buffer sent is empty, so allow it to fill up first.
   if (!filled_buffer) {
     filled_buffer = true;
     return;
   }
-
-  frame_crc = dma_hw->sniff_data;
-  dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing!
 
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
