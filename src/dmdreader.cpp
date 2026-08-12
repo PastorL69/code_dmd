@@ -245,7 +245,6 @@ void spi_clean_exit() {
     return;
   }
 
-  Serial.printf("cleane xitring\n");
   pio_sm_set_enabled(dmd_pio, dmd_sm, false);
   memset(framebuf1, 0, target_bytes);
   memset(framebuf2, 0, target_bytes);
@@ -920,15 +919,12 @@ void dmd_dma_handler() {
   switch_buffers();
 
   // first buffer sent is empty, so allow it to fill up first.
-  if (!filled_buffer) {
-    Serial.printf("buffer filled with CRC = %08X\n", frame_crc);
-    filled_buffer = true;
-    return;
-  }
+  // if (!filled_buffer) {
+  //   filled_buffer = true;
+  //   return;
+  // }
 
   if (frame_crc != crc_previous_frame) {
-    Serial.printf("CRC = %08X\n", frame_crc);
-    Serial.printf("prev CRC = %08X\n", crc_previous_frame);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
