@@ -688,9 +688,6 @@ void dmd_dma_handler() {
     planebuf++;
   }
 
-  uint32_t now2 = micros();
-  Serial.printf("total timing diff: %duS\n", now2-now1);
-
   // Get a 32bit pointer to the frame buffer to handle more pixels at once.
   uint32_t *framebuf = (uint32_t *)processingbuf;
 
@@ -801,6 +798,9 @@ void dmd_dma_handler() {
       // There's no system using this conversion yet, but let's have it ready
     }
   }
+
+  uint32_t now2 = micros();
+  Serial.printf("total timing diff: %duS\n", now2-now1);
 
   if (dmd_type >= DMD_CAPCOM && !locked_in && !plane0_shifted &&
       detected_0_1_0_1 && detected_1_0_0_0) {
