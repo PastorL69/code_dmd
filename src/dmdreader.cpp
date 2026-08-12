@@ -927,10 +927,10 @@ void dmd_dma_handler() {
   }
 
   if (frame_crc != crc_previous_frame) {
-    crc_previous_frame = frame_crc;
-    frame_received = true;
     Serial.printf("CRC = %08X\n", frame_crc);
     Serial.printf("prev CRC = %08X\n", crc_previous_frame);
+    crc_previous_frame = frame_crc;
+    frame_received = true;
   }
 }
 
