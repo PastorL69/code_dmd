@@ -245,6 +245,7 @@ void spi_clean_exit() {
     return;
   }
 
+  Serial.printf("cleane xitring\n");
   pio_sm_set_enabled(dmd_pio, dmd_sm, false);
   memset(framebuf1, 0, target_bytes);
   memset(framebuf2, 0, target_bytes);
@@ -908,7 +909,6 @@ void dmd_dma_handler() {
       }
     }
   }
-  uint32_t now1 = micros();
 
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
@@ -921,6 +921,7 @@ void dmd_dma_handler() {
 
   // first buffer sent is empty, so allow it to fill up first.
   if (!filled_buffer) {
+    Serial.printf("buffer filled with CRC = %08X\n", frame_crc);
     filled_buffer = true;
     return;
   }
@@ -928,8 +929,8 @@ void dmd_dma_handler() {
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
     frame_received = true;
-    uint32_t now2 = micros();
-    Serial.printf("total timing diff: %duS\n", now2-now1);
+    Serial.printf("CRC = %08X\n", frame_crc);
+    Serial.printf("prev CRC = %08X\n", crc_previous_frame);
   }
 }
 
