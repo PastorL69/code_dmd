@@ -642,11 +642,11 @@ void dmd_dma_reset() {
 void dmd_prepare_dma_sniffer() {
   dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
                                        loopback ? source_bytes : target_bytes);
-  uint32_t now1 = micros();
+  // uint32_t now1 = micros();
   dma_channel_wait_for_finish_blocking(
       dma_sniff_channel);  // waiting is required.
-  uint32_t now2 = micros();
-  Serial.printf("dma waiting time: %duS\n", now2-now1);
+  // uint32_t now2 = micros();
+  // Serial.printf("dma waiting time: %duS\n", now2-now1);
 }
 
 /**
