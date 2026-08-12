@@ -635,6 +635,18 @@ void dmd_dma_reset() {
 }
 
 /**
+ * @brief Takes the freshly processed frame array and runs it through a dummy
+ * DMA transfer. This is required to sniff the CRC32.
+ *
+ */
+void dmd_prepare_dma_sniffer() {
+  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
+                                       loopback ? source_bytes : target_bytes);
+  dma_channel_wait_for_finish_blocking(
+      dma_sniff_channel);  // waiting is required.
+}
+
+/**
  * @brief Handles DMD DMA requests by switching between the buffers
  *
  */
@@ -902,8 +914,9 @@ void dmd_dma_handler() {
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
-  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
-                                       loopback ? source_bytes : target_bytes);
+  dmd_prepare_dma_sniffer();
+  frame_crc = dma_hw->sniff_data;
+  dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing!
 
   switch_buffers();
 
@@ -912,11 +925,6 @@ void dmd_dma_handler() {
     filled_buffer = true;
     return;
   }
-
-  // wait incase the dummy DMA sniffing transfer has not finished yet
-  dma_channel_wait_for_finish_blocking(dma_sniff_channel);
-  frame_crc = dma_hw->sniff_data;
-  dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing!
 
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
