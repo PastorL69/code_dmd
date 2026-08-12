@@ -651,8 +651,6 @@ void dmd_prepare_dma_sniffer() {
  *
  */
 void dmd_dma_handler() {
-  uint32_t now1 = micros();
-
   dmd_set_and_enable_new_dma_target();
 
   if (dmd_type == DMD_DE_X16_V2) {
@@ -799,9 +797,6 @@ void dmd_dma_handler() {
     }
   }
 
-  uint32_t now2 = micros();
-  Serial.printf("total timing diff: %duS\n", now2-now1);
-
   if (dmd_type >= DMD_CAPCOM && !locked_in && !plane0_shifted &&
       detected_0_1_0_1 && detected_1_0_0_0) {
     digitalWrite(LED_BUILTIN, LOW);
@@ -913,6 +908,7 @@ void dmd_dma_handler() {
       }
     }
   }
+  uint32_t now1 = micros();
 
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
@@ -932,6 +928,8 @@ void dmd_dma_handler() {
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
     frame_received = true;
+    uint32_t now2 = micros();
+    Serial.printf("total timing diff: %duS\n", now2-now1);
   }
 }
 
