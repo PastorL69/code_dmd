@@ -46,7 +46,7 @@ enum DmdType : uint8_t {
 bool dmdreader_init(bool return_on_no_detection = false);
 
 void dmdreader_spi_init();
-bool dmdreader_spi_send();
+bool dmdreader_spi_send(bool is_restarting = false);
 
 void dmdreader_loopback_init(uint8_t *buffer1, uint8_t *buffer2, Color color);
 void dmdreader_loopback_stop();
