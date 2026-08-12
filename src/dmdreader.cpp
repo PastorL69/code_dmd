@@ -688,6 +688,9 @@ void dmd_dma_handler() {
     planebuf++;
   }
 
+  uint32_t now2 = micros();
+  Serial.printf("total timing diff: %duS\n", now2-now1);
+
   // Get a 32bit pointer to the frame buffer to handle more pixels at once.
   uint32_t *framebuf = (uint32_t *)processingbuf;
 
@@ -929,8 +932,6 @@ void dmd_dma_handler() {
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
     frame_received = true;
-    uint32_t now2 = micros();
-    Serial.printf("total timing diff: %duS\n", now2-now1);
   }
 }
 
