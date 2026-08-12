@@ -899,11 +899,11 @@ void dmd_dma_handler() {
     }
   }
 
-  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
-                                       loopback ? source_bytes : target_bytes);
-
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
+
+  dma_channel_transfer_from_buffer_now(dma_sniff_channel, current_framebuf,
+                                       loopback ? source_bytes : target_bytes);
 
   switch_buffers();
 
@@ -921,9 +921,9 @@ void dmd_dma_handler() {
   if (frame_crc != crc_previous_frame) {
     crc_previous_frame = frame_crc;
     frame_received = true;
+    uint32_t now2 = micros();
+    Serial.printf("total timing diff: %duS\n", now2-now1);
   }
-  uint32_t now2 = micros();
-  Serial.printf("total timing diff: %duS\n", now2-now1);
 }
 
 void dmdreader_error_blink(bool no_error) {
