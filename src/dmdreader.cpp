@@ -109,7 +109,9 @@ uint8_t *framebuf3;
 uint8_t *current_framebuf;
 uint8_t *framebuf_to_send;
 
-uint8_t dummy_sniff_dst[1];
+// 4 byte aligned array used to sniff the DMA transfer in turn for a CRC32
+uint8_t *crc_sniff_dst;
+
 uint32_t frame_crc = 0;
 uint32_t crc_previous_frame = 0;
 bool detected_0_1_0_1 = false;
@@ -1465,6 +1467,7 @@ bool dmdreader_init(bool return_on_no_detection) {
 
     size_t processing_bytes = source_bytes * source_lineoversampling;
 
+    crc_sniff_dst = alloc_aligned_buffer(sizeof(uint32_t), 4, nullptr);
     planebuf1 = alloc_aligned_buffer(plane_bytes, 4, nullptr);
     planebuf2 = alloc_aligned_buffer(plane_bytes, 4, nullptr);
     processingbuf = alloc_aligned_buffer(processing_bytes, 8, nullptr);
@@ -1538,7 +1541,6 @@ bool dmdreader_init(bool return_on_no_detection) {
   // CRC32 DMA sniffer for DMD reader
   dma_sniff_channel = dma_claim_unused_channel(true);
   dma_sniff_channel_cfg = dma_channel_get_default_config(dma_sniff_channel);
-  channel_config_set_transfer_data_size(&dma_sniff_channel_cfg, DMA_SIZE_8);
   channel_config_set_read_increment(&dma_sniff_channel_cfg, true);
   channel_config_set_write_increment(&dma_sniff_channel_cfg, false);
 
@@ -1548,12 +1550,11 @@ bool dmdreader_init(bool return_on_no_detection) {
   dma_sniffer_set_output_reverse_enabled(true);
   dma_sniffer_enable(dma_sniff_channel, DMA_SNIFF_CTRL_CALC_VALUE_CRC32R, true);
 
-  dma_channel_configure(
-      dma_sniff_channel, &dma_sniff_channel_cfg,
-      dummy_sniff_dst,  // Destination pointer
-      NULL,             // Source pointer is set during dmd_dma_handler
-      0,                // We do not know the transfer count yet
-      false             // Do not yet start
+  dma_channel_configure(dma_sniff_channel, &dma_sniff_channel_cfg,
+                        crc_sniff_dst,  // Destination pointer
+                        NULL,  // Source pointer is set during dmd_dma_handler
+                        0,     // We do not know the transfer count yet
+                        false  // Do not yet start
   );
 
   // Finally start DMD reader PIO program and DMA
