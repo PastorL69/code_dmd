@@ -914,7 +914,9 @@ void dmd_dma_handler() {
   memcpy(current_framebuf, processingbuf,
          loopback ? source_bytes : target_bytes);
 
+  uint32_t now1 = micros();
   dmd_prepare_dma_sniffer();
+  uint32_t now2 = micros();
   frame_crc = dma_hw->sniff_data;
   dma_hw->sniff_data = 0xFFFFFFFF;  // always clean after sniffing!
 
@@ -927,6 +929,9 @@ void dmd_dma_handler() {
   }
 
   if (frame_crc != crc_previous_frame) {
+    Serial.printf("timing diff = %duS\n", now2-now1);
+    Serial.printf("frame crc = %08X\n", frame_crc);
+    Serial.printf("frame crc prev = %08X\n", crc_previous_frame);
     crc_previous_frame = frame_crc;
     frame_received = true;
   }
