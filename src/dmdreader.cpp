@@ -1655,4 +1655,4 @@ uint8_t *dmdreader_loopback_render() {
 
 uint16_t dmdreader_get_source_width() { return source_width; }
 uint16_t dmdreader_get_source_height() { return source_height; }
-uint64_t dmdreader_get_detect_signals() {return detected_signals; }
+uint64_t dmdreader_get_detected_signals() {return detected_signals; }
