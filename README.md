@@ -22,17 +22,6 @@ This project allows to read the contents of a pinball DMD using the Raspberry Pi
 
 The Pico is directly connected to all DMD data lines. Communication between the Pico and the consumer is implemented via SPI with an additional IRQ line. On this IRQ line, the Pico signals that a new frame is available, notifying the consumer to start the data transfer as soon as possible. This architecture accommodates consumers (especially Linux hosts like the Raspberry Pi) that are not real-time systems.
 
-| Pico GPIO | DMD Data Line     |
-| --------  | ----------------- |
-| GPIO 0    | SDATA_X16         |
-| GPIO 1    | SDATA_X16_PADDING |
-| GPIO 2    | SDATA             |
-| GPIO 3    | DOTCLK            |
-| GPIO 4    | COLLAT            |
-| GPIO 5    | RCLK              |
-| GPIO 6    | RDATA             |
-| GPIO 7    | DE                |
-
 ## Reading data
 
 When reading data, we assume the data is sent correctly.
