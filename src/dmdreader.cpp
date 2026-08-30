@@ -350,7 +350,7 @@ DmdType detect_dmd() {
 
     // WPC: DOTCLK: 500000 | RCLK: 3900 | RDATA: 120
   } else if ((dotclk > 450000) && (dotclk < 550000) && (rclk > 3800) &&
-             (rclk < 4000) && (rdata > 115) && (rdata < 130)) {
+             (rclk < 4000) && (rdata > 115) && (rdata < 260)) {
     return DMD_WPC;
 
     // DOTMATION: DOTCLK: 1900000 | RCLK: 9950 | RDATA: 155
