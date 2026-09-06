@@ -348,7 +348,7 @@ DmdType detect_dmd() {
              (rclk < 2050) && (rdata > 55) && (rdata < 65)) {
     return DMD_SAM;
 
-    // WPC: DOTCLK: 500000 | RCLK: 3900 | RDATA: 120
+    // WPC: DOTCLK: 500000 | RCLK: 3900 | RDATA: 120 (doubled in some cases)
   } else if ((dotclk > 450000) && (dotclk < 550000) && (rclk > 3800) &&
              (rclk < 4000) && (rdata > 115) && (rdata < 260)) {
     return DMD_WPC;
